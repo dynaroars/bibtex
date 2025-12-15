@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BibTeX Parser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <h1>BibTeX Parser</h1>
+      <p>Parse and display your academic publications.</p>
+    </header>
+
+    <div class="search-section">
+      <div class="upload-container">
+        <div class="upload-area" id="dropZone">
+          <div class="upload-icon">📁</div>
+          <p>Drag & drop your <strong>.bib</strong> or <strong>.csv</strong> file here</p>
+          <span class="or-divider">or</span>
+          <label class="file-btn">
+            <input type="file" id="fileInput" accept=".bib,.bibtex,.csv" />
+            Browse Files
+          </label>
+        </div>
+
+        <div class="url-input-wrapper">
+          <div class="url-divider">
+            <span>Or load from URL</span>
+          </div>
+          <div class="url-input-group">
+            <input type="url" id="urlInput" placeholder="https://example.com/bibliography.bib" />
+            <button id="loadUrlBtn" class="btn-secondary">Load</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters" id="filtersSection" style="display: none;">
+        <div class="search-filter">
+          <input type="search" id="searchInput" placeholder="Search by title, author, venue, year..." />
+          <span id="searchCount" class="search-count"></span>
+        </div>
+        <div class="filter-actions">
+          <div class="filter-group">
+            <label>Group by</label>
+            <div class="group-toggle">
+              <button class="group-btn active" data-group="year">Year</button>
+              <button class="group-btn" data-group="type">Type</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Export as</label>
+            <div class="export-dropdown">
+              <select id="exportFormat">
+                <option value="">Select format...</option>
+                <option value="json">JSON</option>
+                <option value="bibtex">BibTeX</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="stats-section" class="stats-section" style="display: none;">
+      <div class="card stats-card">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-count" id="totalPubs">0</span>
+            <span class="stat-label">Publications</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-count" id="totalYears">0</span>
+            <span class="stat-label">Years</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-count" id="totalVenues">0</span>
+            <span class="stat-label">Venues</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <section id="publications-container" class="results-container"></section>
+    </main>
+  </div>
+
+  <footer>
+    <a href="https://github.com/dynaroars/bibTex" target="_blank">GitHub</a>
+  </footer>
+
+  <div id="loadingOverlay" class="modal hidden">
+    <div class="modal-content" style="max-width: 200px; text-align: center; padding: 2rem;">
+      <span class="spinner">↻</span>
+      <p>Parsing...</p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
