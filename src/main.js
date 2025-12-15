@@ -131,14 +131,44 @@ async function loadFromUrl(url) {
 
     try {
         let response;
+        let lastError;
+
+        // Try direct fetch first
         try {
             response = await fetch(url);
-        } catch {
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-            response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        } catch (e) {
+            lastError = e;
+            response = null;
         }
 
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        // Try AllOrigins proxy
+        if (!response) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (e) {
+                lastError = e;
+                response = null;
+            }
+        }
+
+        // Try CORSProxy.io as backup
+        if (!response) {
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            } catch (e) {
+                lastError = e;
+                response = null;
+            }
+        }
+
+        if (!response) {
+            throw lastError || new Error('Failed to fetch from all sources');
+        }
 
         const content = await response.text();
         processContent(content, currentFileType);
