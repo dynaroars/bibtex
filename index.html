@@ -23,25 +23,18 @@
     </header>
 
     <div class="search-section">
-      <div class="upload-container">
-        <div class="upload-area" id="dropZone">
-          <div class="upload-icon">📁</div>
-          <p>Drag & drop your <strong>.bib</strong> or <strong>.csv</strong> file here</p>
-          <span class="or-divider">or</span>
-          <label class="file-btn">
+      <div class="upload-box" id="dropZone">
+        <div class="upload-row">
+          <span class="upload-icon">📁</span>
+          <span>Drop <strong>.bib</strong> / <strong>.csv</strong> file or</span>
+          <label class="file-btn-inline">
             <input type="file" id="fileInput" accept=".bib,.bibtex,.csv" />
-            Browse Files
+            Browse
           </label>
         </div>
-
-        <div class="url-input-wrapper">
-          <div class="url-divider">
-            <span>Or load from URL</span>
-          </div>
-          <div class="url-input-group">
-            <input type="url" id="urlInput" placeholder="https://example.com/bibliography.bib" />
-            <button id="loadUrlBtn" class="btn-secondary">Load</button>
-          </div>
+        <div class="url-row">
+          <input type="url" id="urlInput" value="https://raw.githubusercontent.com/dynaroars/latex-cv/main/cv.bib" />
+          <button id="loadUrlBtn" class="btn-load">Load URL</button>
         </div>
       </div>
 
@@ -51,6 +44,15 @@
           <span id="searchCount" class="search-count"></span>
         </div>
         <div class="filter-actions">
+          <div class="filter-group">
+            <label>Filter</label>
+            <div class="checkbox-group">
+              <label class="checkbox-btn">
+                <input type="checkbox" id="excludePreprints" checked>
+                <span>Hide Preprints</span>
+              </label>
+            </div>
+          </div>
           <div class="filter-group">
             <label>Group by</label>
             <div class="group-toggle">

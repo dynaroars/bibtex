@@ -19,16 +19,17 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 const groupButtons = document.querySelectorAll('.group-btn');
 const exportFormat = document.getElementById('exportFormat');
 const searchInput = document.getElementById('searchInput');
+const excludePreprints = document.getElementById('excludePreprints');
+
+const DEFAULT_BIB_URL = 'https://raw.githubusercontent.com/dynaroars/latex-cv/main/cv.bib';
 
 function init() {
     setupEventListeners();
 
     const params = new URLSearchParams(window.location.search);
-    const bibUrl = params.get('bib');
-    if (bibUrl) {
-        urlInput.value = bibUrl;
-        loadFromUrl(bibUrl);
-    }
+    const bibUrl = params.get('bib') || DEFAULT_BIB_URL;
+    urlInput.value = bibUrl;
+    loadFromUrl(bibUrl);
 }
 
 function setupEventListeners() {
@@ -38,14 +39,20 @@ function setupEventListeners() {
     dropZone.addEventListener('dragleave', handleDragLeave);
     dropZone.addEventListener('drop', handleDrop);
     dropZone.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'INPUT') {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !e.target.closest('.url-row')) {
             fileInput.click();
         }
     });
 
-    loadUrlBtn.addEventListener('click', () => loadFromUrl(urlInput.value));
+    loadUrlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        loadFromUrl(urlInput.value);
+    });
     urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') loadFromUrl(urlInput.value);
+    });
+    urlInput.addEventListener('click', (e) => {
+        e.stopPropagation();
     });
 
     groupButtons.forEach(btn => {
@@ -66,6 +73,10 @@ function setupEventListeners() {
 
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value.toLowerCase().trim();
+        displayPublications();
+    });
+
+    excludePreprints.addEventListener('change', () => {
         displayPublications();
     });
 }
@@ -126,6 +137,13 @@ async function loadFromUrl(url) {
         return;
     }
 
+    // Convert GitHub blob URL to raw
+    if (url.includes('github.com') && url.includes('/blob/')) {
+        url = url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+        // Update input to show the converted raw URL (optional, helps user understand)
+        urlInput.value = url;
+    }
+
     currentFileType = url.toLowerCase().endsWith('.csv') ? 'csv' : 'bib';
     showLoading(true);
 
@@ -133,7 +151,6 @@ async function loadFromUrl(url) {
         let response;
         let lastError;
 
-        // Try direct fetch first
         try {
             response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -142,7 +159,6 @@ async function loadFromUrl(url) {
             response = null;
         }
 
-        // Try AllOrigins proxy
         if (!response) {
             try {
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -154,7 +170,6 @@ async function loadFromUrl(url) {
             }
         }
 
-        // Try CORSProxy.io as backup
         if (!response) {
             try {
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
@@ -203,7 +218,7 @@ function displayPublications() {
     let filteredPubs = currentPublications;
 
     if (searchQuery) {
-        filteredPubs = currentPublications.filter(pub => {
+        filteredPubs = filteredPubs.filter(pub => {
             const searchFields = [
                 pub.title,
                 pub.authors,
@@ -214,6 +229,11 @@ function displayPublications() {
 
             return searchFields.includes(searchQuery);
         });
+    }
+
+    // Filter by type
+    if (excludePreprints.checked) {
+        filteredPubs = filteredPubs.filter(pub => pub.type !== 'preprint');
     }
 
     const groups = currentGrouping === 'year'

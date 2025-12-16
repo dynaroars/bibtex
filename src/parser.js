@@ -2,10 +2,23 @@
 
 export function parseBibTeX(bibtexContent) {
     const stringDefs = extractStringDefinitions(bibtexContent);
-    const entries = extractEntries(bibtexContent);
+    const rawEntries = extractEntries(bibtexContent);
+    const entriesMap = new Map(rawEntries.map(e => [e.key, e]));
 
-    return entries
-        .filter(entry => !entry.fields.crossref)
+    const resolvedEntries = rawEntries.map(entry => {
+        if (entry.fields.crossref) {
+            const parent = entriesMap.get(entry.fields.crossref);
+            if (parent) {
+                return {
+                    ...entry,
+                    fields: { ...parent.fields, ...entry.fields }
+                };
+            }
+        }
+        return entry;
+    });
+
+    return resolvedEntries
         .map(entry => normalizeEntry(entry, stringDefs));
 }
 
@@ -71,20 +84,19 @@ function parseFields(content) {
 }
 
 function cleanLatex(text) {
+    if (!text) return '';
     return text
-        .replace(/\\href\{[^}]*\}\{([^}]*)\}/g, '$1')
+        .replace(/\\href\{([^}]*)\}\{([^}]*)\}/g, '$1')
+        .replace(/\\url\{([^}]*)\}/g, '$1')
         .replace(/\\&/g, '&')
         .replace(/\\\\/g, '')
         .replace(/\\'/g, "'")
         .replace(/\\"/g, '"')
         .replace(/\\`/g, '`')
         .replace(/\\~/g, '~')
-        .replace(/\{/g, '')
-        .replace(/\}/g, '')
+        .replace(/[\{\}]/g, '')
         .replace(/\$/g, '')
-        .replace(/\\coe\{[^}]*\}/g, '')
-        .replace(/\\tseif/g, '')
-        .replace(/\\newcommand[^}]*\}/g, '')
+        .replace(/\\coe/g, '*')
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -97,33 +109,53 @@ function normalizeEntry(entry, stringDefs) {
     if (stringDefs[venueKey]) venue = stringDefs[venueKey];
     venue = venue.replace(/#\s*"-?/g, ' ').replace(/-?"/g, '').trim();
 
-    let pdfUrl = null;
+    let pdfUrl = fields.url || null;
     if (fields.note) {
-        const pdfMatch = fields.note.match(/https?:\/\/[^\s}]+\.pdf/i);
-        if (pdfMatch) pdfUrl = pdfMatch[0];
+        const urlMatch = fields.note.match(/https?:\/\/[^\s}]+(?:pdf|html|org)?/i);
+        if (urlMatch) pdfUrl = urlMatch[0];
     }
+
+    if (!pdfUrl && fields.note && fields.note.includes('http')) {
+        const match = fields.note.match(/(https?:\/\/[^\s]+)/);
+        if (match) pdfUrl = match[1];
+    }
+
 
     let pubType = 'misc';
     if (entry.type === 'inproceedings' || entry.type === 'conference') {
         pubType = 'conference';
     } else if (entry.type === 'article') {
-        pubType = 'article';
-    } else if (entry.type === 'misc' && fields.eprint) {
-        pubType = 'preprint';
+        pubType = 'journal';
+    } else if (entry.type === 'misc' || entry.type === 'unpublished') {
+        if (fields.eprint || (fields.archiveprefix && fields.archiveprefix.toLowerCase().includes('arxiv'))) {
+            pubType = 'preprint';
+        } else {
+            pubType = 'misc';
+        }
+    } else if (entry.type === 'techreport') {
+        pubType = 'techreport';
     }
+
+    const typePriority = {
+        'conference': 1,
+        'journal': 2,
+        'techreport': 3,
+        'preprint': 4,
+        'misc': 5
+    };
 
     return {
         key: entry.key,
         type: pubType,
+        typePriority: typePriority[pubType] || 99,
         title: fields.title || 'Untitled',
         authors: formatAuthors(fields.author || ''),
         year: parseInt(fields.year) || 0,
         venue: cleanLatex(venue),
         pages: fields.pages || '',
         doi: fields.doi || null,
-        url: fields.url || null,
-        pdfUrl,
-        eprint: fields.eprint || null,
+        url: pdfUrl,
+        note: fields.note || null,
         publisher: fields.publisher || null,
         volume: fields.volume || null,
         number: fields.number || null,
@@ -136,7 +168,7 @@ function formatAuthors(authorString) {
     const authors = authorString.split(/\s+and\s+/i);
 
     return authors.map(author => {
-        author = author.replace(/\$\^[^$]*\$/g, '').trim();
+        author = author.replace(/\$\^[^$]*\$/g, '').trim(); // Remove math superscripts
 
         if (author.includes(',')) {
             const parts = author.split(',').map(p => p.trim());
@@ -149,6 +181,7 @@ function formatAuthors(authorString) {
 
 // Grouping functions
 export function groupByYear(publications) {
+
     const grouped = {};
 
     publications.forEach(pub => {
@@ -160,17 +193,24 @@ export function groupByYear(publications) {
     const sortedYears = Object.keys(grouped)
         .sort((a, b) => (parseInt(b) || 0) - (parseInt(a) || 0));
 
-    return sortedYears.map(year => ({
-        year,
-        publications: grouped[year]
-    }));
+    return sortedYears.map(year => {
+        const pubsInYear = grouped[year].sort((a, b) => {
+            return a.typePriority - b.typePriority;
+        });
+
+        return {
+            year,
+            publications: pubsInYear
+        };
+    });
 }
 
 export function groupByType(publications) {
     const typeNames = {
-        article: 'Journal Articles',
+        journal: 'Journal Articles',
         conference: 'Conference Papers',
         preprint: 'Preprints',
+        techreport: 'Technical Reports',
         misc: 'Other'
     };
 
@@ -182,12 +222,13 @@ export function groupByType(publications) {
         grouped[type].push(pub);
     });
 
-    const typePriority = ['article', 'conference', 'preprint', 'misc'];
+    // Explicit order: Conference, Journal, Tech Report, Preprint, Misc
+    const order = ['conference', 'journal', 'techreport', 'preprint', 'misc'];
 
-    return typePriority
-        .filter(type => grouped[type])
+    return order
+        .filter(type => grouped[type] && grouped[type].length > 0)
         .map(type => ({
-            year: typeNames[type] || type,
+            year: typeNames[type] || type, // Reusing 'year' property for section title to keep renderer simple
             publications: grouped[type].sort((a, b) => (b.year || 0) - (a.year || 0))
         }));
 }
