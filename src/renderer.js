@@ -33,18 +33,18 @@ export function renderPublications(groups, container) {
 function renderPublicationCard(pub, index) {
   const links = generateLinks(pub);
   const titleHtml = pub.pdfUrl || pub.url || pub.doi
-    ? `<a href="${pub.pdfUrl || pub.url || `https://doi.org/${pub.doi}`}" target="_blank" rel="noopener">${escapeHtml(pub.title)}</a>`
-    : escapeHtml(pub.title);
+    ? `<a href="${pub.pdfUrl || pub.url || `https://doi.org/${pub.doi}`}" target="_blank" rel="noopener">${sanitizeLatexHtml(pub.title)}</a>`
+    : sanitizeLatexHtml(pub.title);
 
   return `
         <article class="pub-card" style="animation-delay: ${index * 0.05}s">
             <div class="pub-type-indicator ${pub.type}"></div>
             <div class="pub-content">
                 <h3 class="pub-title">${titleHtml}</h3>
-                <p class="pub-authors">${escapeHtml(pub.authors)}</p>
+                <p class="pub-authors">${sanitizeLatexHtml(pub.authors)}</p>
                 <div class="pub-venue">
                     <span class="pub-type-badge ${pub.type}">${getTypeName(pub.type)}</span>
-                    ${pub.venue ? `<span>${escapeHtml(pub.venue)}</span>` : ''}
+                    ${pub.venue ? `<span>${sanitizeLatexHtml(pub.venue)}</span>` : ''}
                     ${pub.pages ? `<span>pp. ${pub.pages}</span>` : ''}
                 </div>
                 ${links.length > 0 ? `
@@ -72,9 +72,7 @@ function generateLinks(pub) {
     links.push(`<a href="https://arxiv.org/abs/${pub.eprint}" class="pub-link" target="_blank" rel="noopener">arXiv</a>`);
   }
 
-  if (pub.url && !pub.pdfUrl) {
-    links.push(`<a href="${pub.url}" class="pub-link" target="_blank" rel="noopener">Link</a>`);
-  }
+
 
   return links;
 }
@@ -94,6 +92,20 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function sanitizeLatexHtml(text) {
+  if (!text) return '';
+  const escaped = escapeHtml(text);
+  return escaped
+    .replace(/&lt;sup&gt;/g, '<sup>')
+    .replace(/&lt;\/sup&gt;/g, '</sup>')
+    .replace(/&lt;sub&gt;/g, '<sub>')
+    .replace(/&lt;\/sub&gt;/g, '</sub>')
+    .replace(/&lt;em&gt;/g, '<em>')
+    .replace(/&lt;\/em&gt;/g, '</em>')
+    .replace(/&lt;strong&gt;/g, '<strong>')
+    .replace(/&lt;\/strong&gt;/g, '</strong>');
 }
 
 export function updateStats(publications) {

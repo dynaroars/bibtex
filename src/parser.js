@@ -4,11 +4,14 @@ export function parseBibTeX(bibtexContent) {
     const stringDefs = extractStringDefinitions(bibtexContent);
     const rawEntries = extractEntries(bibtexContent);
     const entriesMap = new Map(rawEntries.map(e => [e.key, e]));
+    const usedCrossrefs = new Set();
 
     const resolvedEntries = rawEntries.map(entry => {
         if (entry.fields.crossref) {
-            const parent = entriesMap.get(entry.fields.crossref);
+            const parentKey = entry.fields.crossref;
+            const parent = entriesMap.get(parentKey);
             if (parent) {
+                usedCrossrefs.add(parentKey);
                 return {
                     ...entry,
                     fields: { ...parent.fields, ...entry.fields }
@@ -19,6 +22,7 @@ export function parseBibTeX(bibtexContent) {
     });
 
     return resolvedEntries
+        .filter(entry => !usedCrossrefs.has(entry.key))
         .map(entry => normalizeEntry(entry, stringDefs));
 }
 
@@ -86,7 +90,11 @@ function parseFields(content) {
 function cleanLatex(text) {
     if (!text) return '';
     return text
-        .replace(/\\href\{([^}]*)\}\{([^}]*)\}/g, '$1')
+        .replace(/\$\^[\{]?([^\$\}]+)[\}]?\$/g, '<sup>$1</sup>')
+        .replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>')
+        .replace(/\$_[\{]?([^\$\}]+)[\}]?\$/g, '<sub>$1</sub>')
+        .replace(/_\{([^}]+)\}/g, '<sub>$1</sub>')
+        .replace(/\\href\{([^}]*)\}\{([^}]*)\}/g, '$2')
         .replace(/\\url\{([^}]*)\}/g, '$1')
         .replace(/\\&/g, '&')
         .replace(/\\\\/g, '')
@@ -94,6 +102,9 @@ function cleanLatex(text) {
         .replace(/\\"/g, '"')
         .replace(/\\`/g, '`')
         .replace(/\\~/g, '~')
+        .replace(/\\textit\{([^}]*)\}/g, '<em>$1</em>')
+        .replace(/\\textbf\{([^}]*)\}/g, '<strong>$1</strong>')
+        .replace(/\\emph\{([^}]*)\}/g, '<em>$1</em>')
         .replace(/[\{\}]/g, '')
         .replace(/\$/g, '')
         .replace(/\\coe/g, '*')

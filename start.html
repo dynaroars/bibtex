@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get BibTeX Embed Code</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --accent-color: #333333;
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            flex: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            background: #fafafa;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            font-family: var(--font-body);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--text-color);
+        }
+
+        .btn {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .output-section {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .output-section.visible {
+            display: block;
+        }
+
+        .output-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .code-block {
+            background: #1a1a1a;
+            color: #f0f0f0;
+            padding: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            position: relative;
+            border-radius: 4px;
+        }
+
+        .code-block code {
+            display: block;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .copy-btn:hover {
+            background: #555;
+        }
+
+        .copy-btn.copied {
+            background: #2a2;
+        }
+
+        .preview-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .preview-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .direct-link {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f5f5f5;
+            border: 1px solid var(--border-color);
+        }
+
+        .direct-link h3 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .direct-link a {
+            color: #0066cc;
+            word-break: break-all;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .info-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 BibTeX Embed</h1>
+            <p>Display your publications on any website</p>
+        </header>
+
+        <div class="input-section">
+            <label for="bibUrl">Enter your BibTeX file URL</label>
+            <div class="input-group">
+                <input type="url" id="bibUrl" placeholder="https://github.com/user/repo/blob/main/publications.bib" />
+                <button class="btn" id="generateBtn">Generate Code</button>
+            </div>
+            <p class="info-text">Supports GitHub URLs (blob or raw), Dropbox, and any publicly accessible .bib file.</p>
+        </div>
+
+        <div class="output-section" id="outputSection">
+            <h2>📋 Embed Code</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary);">Add this code to your HTML:</p>
+            <div class="code-block">
+                <button class="copy-btn" id="copyBtn">Copy</button>
+                <code id="embedCode"></code>
+            </div>
+
+            <div class="direct-link">
+                <h3>🔗 Or share this direct link:</h3>
+                <a id="directLink" href="#" target="_blank"></a>
+            </div>
+
+            <div class="preview-section">
+                <h2>👁️ Preview</h2>
+                <div id="previewContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <a href="./">← Back to BibTeX Parser</a> ·
+        <a href="https://github.com/dynaroars/bibtex" target="_blank">GitHub</a>
+    </footer>
+
+    <script>
+        const bibUrlInput = document.getElementById('bibUrl');
+        const generateBtn = document.getElementById('generateBtn');
+        const outputSection = document.getElementById('outputSection');
+        const embedCodeEl = document.getElementById('embedCode');
+        const directLinkEl = document.getElementById('directLink');
+        const copyBtn = document.getElementById('copyBtn');
+        const previewContainer = document.getElementById('previewContainer');
+
+        function convertToRawUrl(url) {
+            if (url.includes('github.com') && url.includes('/blob/')) {
+                return url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+            }
+            return url;
+        }
+
+        generateBtn.addEventListener('click', () => {
+            let url = bibUrlInput.value.trim();
+            if (!url) {
+                alert('Please enter a BibTeX file URL');
+                return;
+            }
+
+            const rawUrl = convertToRawUrl(url);
+            const encodedUrl = encodeURIComponent(rawUrl);
+            const baseUrl = window.location.origin + window.location.pathname.replace('/start.html', '').replace('/start', '');
+
+            const embedCode = `<script src="${baseUrl}/embed.js?bib=${encodedUrl}"><\/script>`;
+            const directUrl = `${baseUrl}/?bib=${encodedUrl}`;
+
+            embedCodeEl.textContent = embedCode;
+            directLinkEl.href = directUrl;
+            directLinkEl.textContent = directUrl;
+
+            outputSection.classList.add('visible');
+
+            previewContainer.innerHTML = '<p style="color: #666; font-style: italic;">Loading preview...</p>';
+
+            const existingScript = document.getElementById('previewScript');
+            if (existingScript) existingScript.remove();
+
+            const script = document.createElement('script');
+            script.id = 'previewScript';
+            script.src = `${baseUrl}/embed.js?bib=${encodedUrl}&_t=${Date.now()}`;
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(script);
+        });
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(embedCodeEl.textContent).then(() => {
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Allow Enter key to trigger generate
+        bibUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') generateBtn.click();
+        });
+    </script>
+</body>
+
+</html>

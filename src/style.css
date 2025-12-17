@@ -207,6 +207,22 @@ header p {
   letter-spacing: 0.05em;
 }
 
+.embed-link {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.embed-link:hover {
+  color: var(--text-color);
+  border-color: var(--text-color);
+  background: var(--hover-bg);
+}
+
 /* Group Toggle & Checkbox */
 .group-toggle,
 .checkbox-group {

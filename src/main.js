@@ -27,7 +27,15 @@ function init() {
     setupEventListeners();
 
     const params = new URLSearchParams(window.location.search);
-    const bibUrl = params.get('bib') || DEFAULT_BIB_URL;
+    const customBibUrl = params.get('bib');
+    const bibUrl = customBibUrl || DEFAULT_BIB_URL;
+
+    if (customBibUrl) {
+        document.body.classList.add('show-mode');
+        const uploadBox = document.querySelector('.upload-box');
+        if (uploadBox) uploadBox.style.display = 'none';
+    }
+
     urlInput.value = bibUrl;
     loadFromUrl(bibUrl);
 }
@@ -137,10 +145,8 @@ async function loadFromUrl(url) {
         return;
     }
 
-    // Convert GitHub blob URL to raw
     if (url.includes('github.com') && url.includes('/blob/')) {
         url = url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-        // Update input to show the converted raw URL (optional, helps user understand)
         urlInput.value = url;
     }
 
