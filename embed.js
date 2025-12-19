@@ -173,7 +173,6 @@
         while ((match = pattern.exec(content)) !== null) {
             const key = match[1].toLowerCase();
             const value = match[2] || match[3] || match[4] || '';
-            // Don't clean 'note' yet, we need to extract hrefs first
             fields[key] = key === 'note' ? value.trim() : cleanLatex(value.trim());
         }
         return fields;
@@ -220,7 +219,6 @@
         }
         const effectiveUrl = pdfUrl || finalUrl;
 
-        // Clean note for display
         if (fields.note) {
             fields.note = cleanLatex(fields.note);
         }
