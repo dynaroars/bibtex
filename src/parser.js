@@ -23,7 +23,8 @@ export function parseBibTeX(bibtexContent) {
 
     return resolvedEntries
         .filter(entry => !usedCrossrefs.has(entry.key))
-        .map(entry => normalizeEntry(entry, stringDefs));
+        .map(entry => normalizeEntry(entry, stringDefs))
+        .filter(entry => entry !== null);
 }
 
 function extractStringDefinitions(content) {
@@ -42,6 +43,7 @@ function extractEntries(content) {
     const entries = [];
     const entryPattern = /@(\w+)\s*\{\s*([^,\s]+)\s*,/g;
     let match;
+    let index = 0;
 
     while ((match = entryPattern.exec(content)) !== null) {
         const type = match[1].toLowerCase();
@@ -53,7 +55,7 @@ function extractEntries(content) {
         const fieldsContent = extractFieldsContent(content, startPos);
         if (fieldsContent) {
             const fields = parseFields(fieldsContent);
-            entries.push({ type, key, fields });
+            entries.push({ type, key, fields, index: index++ });
         }
     }
 
@@ -81,7 +83,8 @@ function parseFields(content) {
     while ((match = fieldPattern.exec(content)) !== null) {
         const key = match[1].toLowerCase();
         const value = match[2] || match[3] || match[4] || '';
-        fields[key] = cleanLatex(value.trim());
+        // Don't clean 'note' yet, we need to extract hrefs first
+        fields[key] = key === 'note' ? value.trim() : cleanLatex(value.trim());
     }
 
     return fields;
@@ -133,19 +136,39 @@ function normalizeEntry(entry, stringDefs) {
 
 
     let pubType = 'misc';
-    if (entry.type === 'inproceedings' || entry.type === 'conference') {
+    const rawType = entry.type.toLowerCase();
+
+    if (rawType === 'inproceedings' || rawType === 'conference') {
         pubType = 'conference';
-    } else if (entry.type === 'article') {
+    } else if (rawType === 'article') {
         pubType = 'journal';
-    } else if (entry.type === 'misc' || entry.type === 'unpublished') {
-        if (fields.eprint || (fields.archiveprefix && fields.archiveprefix.toLowerCase().includes('arxiv'))) {
-            pubType = 'preprint';
-        } else {
-            pubType = 'misc';
-        }
-    } else if (entry.type === 'techreport') {
+    } else if (rawType === 'book' || rawType === 'booklet' || rawType === 'incollection') {
+        pubType = 'book';
+    } else if (rawType === 'techreport') {
         pubType = 'techreport';
+    } else if (rawType === 'phdthesis' || rawType === 'mastersthesis') {
+        pubType = 'thesis';
     }
+
+    if (rawType === 'misc' || rawType === 'unpublished') {
+        return null;
+    }
+
+    let finalUrl = fields.url || null;
+    if (finalUrl) {
+        finalUrl = finalUrl.replace(/\\url\{([^}]*)\}/g, '$1').replace(/[\{\}]/g, '');
+    }
+
+    if (fields.note) {
+        const urlMatch = fields.note.match(/https?:\/\/[^\s}]+(?:pdf|html|org)?/i);
+        if (urlMatch) {
+            if (!finalUrl || urlMatch[0].toLowerCase().includes('.pdf')) {
+                pdfUrl = urlMatch[0];
+            }
+        }
+    }
+
+    const effectiveUrl = pdfUrl || finalUrl;
 
     const typePriority = {
         'conference': 1,
@@ -165,11 +188,14 @@ function normalizeEntry(entry, stringDefs) {
         venue: cleanLatex(venue),
         pages: fields.pages || '',
         doi: fields.doi || null,
-        url: pdfUrl,
-        note: fields.note || null,
+        url: effectiveUrl,
+        doi: fields.doi || null,
+        url: effectiveUrl,
+        note: fields.note ? cleanLatex(fields.note) : null,
         publisher: fields.publisher || null,
         volume: fields.volume || null,
         number: fields.number || null,
+        originalIndex: entry.index
     };
 }
 
@@ -242,4 +268,11 @@ export function groupByType(publications) {
             year: typeNames[type] || type, // Reusing 'year' property for section title to keep renderer simple
             publications: grouped[type].sort((a, b) => (b.year || 0) - (a.year || 0))
         }));
+}
+
+export function groupByOriginal(publications) {
+    return [{
+        year: 'All Publications',
+        publications: publications.sort((a, b) => (a.originalIndex || 0) - (b.originalIndex || 0))
+    }];
 }

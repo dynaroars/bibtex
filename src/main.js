@@ -1,4 +1,4 @@
-import { parseBibTeX, groupByYear, groupByType } from './parser.js';
+import { parseBibTeX, groupByYear, groupByType, groupByOriginal } from './parser.js';
 import { parseCSV } from './csvParser.js';
 import { renderPublications, updateStats } from './renderer.js';
 
@@ -242,9 +242,14 @@ function displayPublications() {
         filteredPubs = filteredPubs.filter(pub => pub.type !== 'preprint');
     }
 
-    const groups = currentGrouping === 'year'
-        ? groupByYear(filteredPubs)
-        : groupByType(filteredPubs);
+    let groups;
+    if (currentGrouping === 'year') {
+        groups = groupByYear(filteredPubs);
+    } else if (currentGrouping === 'type') {
+        groups = groupByType(filteredPubs);
+    } else {
+        groups = groupByOriginal(filteredPubs);
+    }
     renderPublications(groups, publicationsContainer);
 
     const countEl = document.getElementById('searchCount');

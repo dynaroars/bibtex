@@ -163,7 +163,7 @@
                 }
             }
             return normalizeEntry(entry.type, entry.key, fields, stringDefs);
-        }).filter(e => e.title && e.title !== 'Untitled' && !usedCrossrefs.has(e.key));
+        }).filter(e => e !== null && e.title && e.title !== 'Untitled' && !usedCrossrefs.has(e.key));
     }
 
     function parseFields(content) {
@@ -173,7 +173,8 @@
         while ((match = pattern.exec(content)) !== null) {
             const key = match[1].toLowerCase();
             const value = match[2] || match[3] || match[4] || '';
-            fields[key] = cleanLatex(value.trim());
+            // Don't clean 'note' yet, we need to extract hrefs first
+            fields[key] = key === 'note' ? value.trim() : cleanLatex(value.trim());
         }
         return fields;
     }
@@ -203,16 +204,36 @@
         const venueKey = venue.toLowerCase();
         if (stringDefs[venueKey]) venue = stringDefs[venueKey];
 
-        let url = fields.url || null;
+        let finalUrl = fields.url || null;
+        if (finalUrl) {
+            finalUrl = finalUrl.replace(/\\url\{([^}]*)\}/g, '$1').replace(/[\{\}]/g, '');
+        }
+
+        let pdfUrl = null;
         if (fields.note) {
-            const urlMatch = fields.note.match(/https?:\/\/[^\s}]+/i);
-            if (urlMatch) url = urlMatch[0];
+            const urlMatch = fields.note.match(/https?:\/\/[^\s}]+(?:pdf|html|org)?/i);
+            if (urlMatch) {
+                if (!finalUrl || urlMatch[0].toLowerCase().includes('.pdf')) {
+                    pdfUrl = urlMatch[0];
+                }
+            }
+        }
+        const effectiveUrl = pdfUrl || finalUrl;
+
+        // Clean note for display
+        if (fields.note) {
+            fields.note = cleanLatex(fields.note);
         }
 
         let pubType = 'misc';
-        if (type === 'inproceedings' || type === 'conference') pubType = 'conference';
-        else if (type === 'article') pubType = 'journal';
-        else if ((type === 'misc' || type === 'unpublished') && fields.eprint) pubType = 'preprint';
+        const rawType = type.toLowerCase();
+        if (rawType === 'inproceedings' || rawType === 'conference') pubType = 'conference';
+        else if (rawType === 'article') pubType = 'journal';
+        else if (rawType === 'book' || rawType === 'booklet' || rawType === 'incollection') pubType = 'book';
+        else if (rawType === 'phdthesis' || rawType === 'mastersthesis') pubType = 'thesis';
+        else if (rawType === 'techreport') pubType = 'techreport';
+
+        if (rawType === 'misc' || rawType === 'unpublished') return null;
 
         return {
             key,
@@ -222,7 +243,7 @@
             year: parseInt(fields.year) || 0,
             venue: cleanLatex(venue),
             doi: fields.doi || null,
-            url
+            url: effectiveUrl
         };
     }
 
@@ -267,7 +288,14 @@
     }
 
     function renderPub(pub) {
-        const typeLabels = { conference: 'Conf', journal: 'Journal', preprint: 'Preprint' };
+        const typeLabels = {
+            conference: 'Conf',
+            journal: 'Journal',
+            book: 'Book',
+            thesis: 'Thesis',
+            techreport: 'Tech Report',
+            preprint: 'Preprint'
+        };
         const badge = typeLabels[pub.type] ? `<span class="bibtex-badge">${typeLabels[pub.type]}</span>` : '';
 
         let titleHtml = pub.title;

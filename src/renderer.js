@@ -22,7 +22,7 @@ export function renderPublications(groups, container) {
                 <span class="year-count">${group.publications.length} publication${group.publications.length !== 1 ? 's' : ''}</span>
             </div>
             <div class="year-publications">
-                ${group.publications.map((pub, pubIndex) => renderPublicationCard(pub, pubIndex)).join('')}
+                ${group.publications.map((pub, pubIndex) => renderPublicationCard(pub, pubIndex, group.year === 'All Publications' || isNaN(group.year))).join('')}
             </div>
         `;
 
@@ -30,7 +30,9 @@ export function renderPublications(groups, container) {
   });
 }
 
-function renderPublicationCard(pub, index) {
+
+
+function renderPublicationCard(pub, index, showYear = false) {
   const links = generateLinks(pub);
   const titleHtml = pub.pdfUrl || pub.url || pub.doi
     ? `<a href="${pub.pdfUrl || pub.url || `https://doi.org/${pub.doi}`}" target="_blank" rel="noopener">${sanitizeLatexHtml(pub.title)}</a>`
@@ -45,6 +47,7 @@ function renderPublicationCard(pub, index) {
                 <div class="pub-venue">
                     <span class="pub-type-badge ${pub.type}">${getTypeName(pub.type)}</span>
                     ${pub.venue ? `<span>${sanitizeLatexHtml(pub.venue)}</span>` : ''}
+                    ${showYear && pub.year ? `<span>(${pub.year})</span>` : ''}
                     ${pub.pages ? `<span>pp. ${pub.pages}</span>` : ''}
                 </div>
                 ${links.length > 0 ? `
@@ -80,7 +83,10 @@ function generateLinks(pub) {
 function getTypeName(type) {
   const names = {
     conference: 'Conference',
-    article: 'Journal',
+    journal: 'Journal',
+    book: 'Book',
+    techreport: 'Tech Report',
+    thesis: 'Thesis',
     preprint: 'Preprint',
     misc: 'Other'
   };
