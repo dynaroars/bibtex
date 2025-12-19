@@ -292,11 +292,11 @@ function exportPublications(format) {
     let content, filename, mimeType;
 
     switch (format) {
-        case 'json':
-            content = JSON.stringify(currentPublications, null, 2);
-            filename = 'publications.json';
-            mimeType = 'application/json';
-            break;
+        // case 'json':
+        //     content = JSON.stringify(currentPublications, null, 2);
+        //     filename = 'publications.json';
+        //     mimeType = 'application/json';
+        //     break;
         case 'bibtex':
             content = exportToBibTeX(currentPublications);
             filename = 'publications.bib';
