@@ -5,7 +5,7 @@ import { renderPublications, updateStats } from './renderer.js';
 // State
 let currentFileType = 'bib';
 let currentPublications = [];
-let currentGrouping = 'year';
+let currentGrouping = '';
 let searchQuery = '';
 
 // DOM Elements
