@@ -252,6 +252,9 @@ function displayPublications() {
     }
     renderPublications(groups, publicationsContainer);
 
+    // Update stats based on filtered results
+    updateStats(filteredPubs);
+
     const countEl = document.getElementById('searchCount');
     if (countEl) {
         countEl.textContent = searchQuery

@@ -114,6 +114,41 @@
             color: #999;
         }
         .bibtex-footer a { color: #666; }
+        .bibtex-search {
+            margin-bottom: 1rem;
+        }
+        .bibtex-search input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9em;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .bibtex-search input:focus {
+            outline: none;
+            border-color: #666;
+        }
+        .bibtex-search-count {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+        .bibtex-awards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+        }
+        .bibtex-award {
+            display: inline-block;
+            font-size: 0.75em;
+            color: #856404;
+            background: #fff3cd;
+            padding: 0.1em 0.4em;
+            border-radius: 3px;
+            font-weight: 500;
+        }
     `;
     document.head.appendChild(style);
 
@@ -241,7 +276,8 @@
             year: parseInt(fields.year) || 0,
             venue: cleanLatex(venue),
             doi: fields.doi || null,
-            url: effectiveUrl
+            url: effectiveUrl,
+            awards: fields.note_award ? fields.note_award.split(';').map(a => cleanLatex(a.trim())).filter(Boolean) : []
         };
     }
 
@@ -258,9 +294,21 @@
     }
 
     // Render functions
-    function render(publications) {
+    let allPublications = [];
+
+    function render(publications, searchQuery = '') {
+        let filtered = publications;
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = publications.filter(pub => {
+                return (pub.title && pub.title.toLowerCase().includes(query)) ||
+                    (pub.authors && pub.authors.toLowerCase().includes(query)) ||
+                    (pub.venue && pub.venue.toLowerCase().includes(query));
+            });
+        }
+
         const grouped = {};
-        publications.forEach(pub => {
+        filtered.forEach(pub => {
             const year = pub.year || 'Unknown';
             if (!grouped[year]) grouped[year] = [];
             grouped[year].push(pub);
@@ -278,11 +326,28 @@
             html += '</div>';
         });
 
+        const searchHtml = `<div class="bibtex-search">
+            <input type="text" placeholder="Search publications..." id="bibtex-search-input">
+            ${searchQuery ? `<div class="bibtex-search-count">Showing ${filtered.length} of ${allPublications.length} publications</div>` : ''}
+        </div>`;
+
         html += `<div class="bibtex-footer">
             Powered by <a href="https://roars.dev/bibtex/" target="_blank">BibTeX Parser</a>
         </div>`;
 
-        container.innerHTML = html;
+        container.innerHTML = searchHtml + html;
+
+        const searchInput = container.querySelector('#bibtex-search-input');
+        if (searchInput) {
+            searchInput.value = searchQuery;
+            searchInput.addEventListener('input', (e) => {
+                render(allPublications, e.target.value);
+            });
+            if (searchQuery) {
+                searchInput.focus();
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }
+        }
     }
 
     function renderPub(pub) {
@@ -311,6 +376,11 @@
             <div class="bibtex-title">${titleHtml}${badge}</div>
             <div class="bibtex-authors">${pub.authors}</div>
             <div class="bibtex-venue">${pub.venue}${pub.year ? ` (${pub.year})` : ''}</div>
+            ${pub.awards && pub.awards.length > 0 ? `
+                <div class="bibtex-awards">
+                    ${pub.awards.map(award => `<span class="bibtex-award">🏆 ${award}</span>`).join('')}
+                </div>
+            ` : ''}
             ${links ? `<div class="bibtex-links">${links}</div>` : ''}
         </div>`;
     }
@@ -339,6 +409,7 @@
                 return;
             }
 
+            allPublications = publications;
             render(publications);
         } catch (err) {
             container.innerHTML = `<div class="bibtex-error">Error loading publications: ${err.message}</div>`;

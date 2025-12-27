@@ -40,16 +40,19 @@ function renderPublicationCard(pub, index, showYear = false) {
 
   return `
         <article class="pub-card" style="animation-delay: ${index * 0.05}s">
-            <div class="pub-type-indicator ${pub.type}"></div>
             <div class="pub-content">
-                <h3 class="pub-title">${titleHtml}</h3>
+                <h3 class="pub-title">${titleHtml}<span class="pub-type-badge ${pub.type}">${getTypeName(pub.type)}</span></h3>
                 <p class="pub-authors">${sanitizeLatexHtml(pub.authors)}</p>
                 <div class="pub-venue">
-                    <span class="pub-type-badge ${pub.type}">${getTypeName(pub.type)}</span>
                     ${pub.venue ? `<span>${sanitizeLatexHtml(pub.venue)}</span>` : ''}
                     ${showYear && pub.year ? `<span>(${pub.year})</span>` : ''}
                     ${pub.pages ? `<span>pp. ${pub.pages}</span>` : ''}
                 </div>
+                ${pub.awards && pub.awards.length > 0 ? `
+                    <div class="pub-awards">
+                        ${pub.awards.map(award => `<span class="pub-award">🏆 ${sanitizeLatexHtml(award)}</span>`).join('')}
+                    </div>
+                ` : ''}
                 ${links.length > 0 ? `
                     <div class="pub-links">
                         ${links.join('')}
