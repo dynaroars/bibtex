@@ -284,10 +284,10 @@
             }
 
             const rawUrl = convertToRawUrl(url);
-            const encodedUrl = encodeURIComponent(rawUrl);
+            const bitUrlParam = rawUrl.includes('&') ? encodeURIComponent(rawUrl) : rawUrl;
             const baseUrl = window.location.origin + window.location.pathname.replace('/start.html', '').replace('/start', '');
 
-            const directUrl = `${baseUrl}/?bib=${encodedUrl}`;
+            const directUrl = `${baseUrl}/?bib=${bitUrlParam}`;
             const embedCode = `<iframe src="${directUrl}" width="100%" height="800" frameborder="0" style="border: 1px solid #eee; border-radius: 8px;"></iframe>`;
 
             embedCodeEl.textContent = embedCode;
