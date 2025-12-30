@@ -12,8 +12,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/bibtex/assets/index-DKeFznXb.js"></script>
-  <link rel="stylesheet" crossorigin href="/bibtex/assets/index-ZuqdYhz5.css">
+  <script type="module" crossorigin src="/bibtex/assets/index-CiMC5zER.js"></script>
+  <link rel="stylesheet" crossorigin href="/bibtex/assets/index-Giu_61Dv.css">
 </head>
 
 <body>
@@ -112,6 +112,19 @@
     <div class="modal-content" style="max-width: 200px; text-align: center; padding: 2rem;">
       <span class="spinner">↻</span>
       <p>Parsing...</p>
+    </div>
+  </div>
+
+  <div id="bibtexModal" class="modal hidden">
+    <div class="modal-content bibtex-modal-content">
+      <div class="modal-header">
+        <h3>BibTeX Entry</h3>
+        <button id="closeModal" class="close-btn">&times;</button>
+      </div>
+      <pre id="bibtexContent"></pre>
+      <div class="modal-actions">
+        <button id="copyBibtex" class="btn-primary">Copy to Clipboard</button>
+      </div>
     </div>
   </div>
 
