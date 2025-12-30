@@ -249,14 +249,16 @@
 
         return entries.map(entry => {
             let fields = entry.fields;
+            let raw = entry.raw;
             if (fields.crossref) {
                 const parent = entriesMap.get(fields.crossref);
                 if (parent) {
                     usedCrossrefs.add(fields.crossref);
                     fields = { ...parent.fields, ...fields };
+                    raw = entry.raw + '\n\n' + parent.raw;
                 }
             }
-            return normalizeEntry(entry.type, entry.key, fields, entry.raw, stringDefs);
+            return normalizeEntry(entry.type, entry.key, fields, raw, stringDefs);
         }).filter(e => e !== null && e.title && e.title !== 'Untitled' && !usedCrossrefs.has(e.key));
     }
 

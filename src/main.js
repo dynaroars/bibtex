@@ -35,12 +35,6 @@ function init() {
     const customBibUrl = params.get('bib');
     const bibUrl = customBibUrl || DEFAULT_BIB_URL;
 
-    if (customBibUrl) {
-        document.body.classList.add('show-mode');
-        const uploadBox = document.querySelector('.upload-box');
-        if (uploadBox) uploadBox.style.display = 'none';
-    }
-
     urlInput.value = bibUrl;
     loadFromUrl(bibUrl);
 }

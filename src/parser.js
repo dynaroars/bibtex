@@ -14,7 +14,8 @@ export function parseBibTeX(bibtexContent) {
                 usedCrossrefs.add(parentKey);
                 return {
                     ...entry,
-                    fields: { ...parent.fields, ...entry.fields }
+                    fields: { ...parent.fields, ...entry.fields },
+                    raw: entry.raw + '\n\n' + parent.raw
                 };
             }
         }
