@@ -1,6 +1,6 @@
 # BibTeX Parser
 
-Parse and display your academic publications.
+Parse and display your academic publications.  See demo at https://roars.dev/bibtex/?bib=https://raw.githubusercontent.com/dynaroars/latex-cv/main/cv.bib.
 
 ## Features
 
