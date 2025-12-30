@@ -149,6 +149,57 @@
             border-radius: 3px;
             font-weight: 500;
         }
+        .bibtex-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        .bibtex-modal-content {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .bibtex-modal-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.75rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .bibtex-modal-pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            border: 1px solid #eee;
+        }
+        .bibtex-copy-btn {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
     `;
     document.head.appendChild(style);
 
@@ -167,21 +218,29 @@
         while ((match = entryPattern.exec(content)) !== null) {
             const type = match[1].toLowerCase();
             const key = match[2];
-            const startPos = match.index + match[0].length;
+            const startPos = match.index;
 
             if (['preamble', 'string', 'comment'].includes(type)) continue;
 
-            let braceCount = 1, pos = startPos;
-            while (pos < content.length && braceCount > 0) {
-                if (content[pos] === '{') braceCount++;
-                else if (content[pos] === '}') braceCount--;
+            let braceCount = 0, pos = startPos, foundFirstBrace = false, fieldsStart = -1;
+            while (pos < content.length) {
+                if (content[pos] === '{') {
+                    if (!foundFirstBrace) {
+                        foundFirstBrace = true;
+                        fieldsStart = pos + 1;
+                    }
+                    braceCount++;
+                } else if (content[pos] === '}') {
+                    braceCount--;
+                    if (foundFirstBrace && braceCount === 0) {
+                        const fieldsContent = content.slice(fieldsStart, pos);
+                        const rawContent = content.slice(startPos, pos + 1);
+                        const fields = parseFields(fieldsContent);
+                        entries.push({ type, key, fields, raw: rawContent });
+                        break;
+                    }
+                }
                 pos++;
-            }
-
-            if (braceCount === 0) {
-                const fieldsContent = content.slice(startPos, pos - 1);
-                const fields = parseFields(fieldsContent);
-                entries.push({ type, key, fields });
             }
         }
 
@@ -197,7 +256,7 @@
                     fields = { ...parent.fields, ...fields };
                 }
             }
-            return normalizeEntry(entry.type, entry.key, fields, stringDefs);
+            return normalizeEntry(entry.type, entry.key, fields, entry.raw, stringDefs);
         }).filter(e => e !== null && e.title && e.title !== 'Untitled' && !usedCrossrefs.has(e.key));
     }
 
@@ -233,7 +292,7 @@
             .trim();
     }
 
-    function normalizeEntry(type, key, fields, stringDefs) {
+    function normalizeEntry(type, key, fields, raw, stringDefs) {
         let venue = fields.booktitle || fields.journal || '';
         const venueKey = venue.toLowerCase();
         if (stringDefs[venueKey]) venue = stringDefs[venueKey];
@@ -277,6 +336,7 @@
             venue: cleanLatex(venue),
             doi: fields.doi || null,
             url: effectiveUrl,
+            raw: raw,
             awards: fields.note_award ? fields.note_award.split(';').map(a => cleanLatex(a.trim())).filter(Boolean) : []
         };
     }
@@ -307,24 +367,11 @@
             });
         }
 
-        const grouped = {};
+        let html = '<div class="bibtex-group">';
         filtered.forEach(pub => {
-            const year = pub.year || 'Unknown';
-            if (!grouped[year]) grouped[year] = [];
-            grouped[year].push(pub);
+            html += renderPub(pub);
         });
-
-        const years = Object.keys(grouped).sort((a, b) => (parseInt(b) || 0) - (parseInt(a) || 0));
-
-        let html = '';
-        years.forEach(year => {
-            html += `<div class="bibtex-group">
-                <div class="bibtex-group-title">${year}</div>`;
-            grouped[year].forEach(pub => {
-                html += renderPub(pub);
-            });
-            html += '</div>';
-        });
+        html += '</div>';
 
         const searchHtml = `<div class="bibtex-search">
             <input type="text" placeholder="Search publications..." id="bibtex-search-input">
@@ -337,6 +384,17 @@
 
         container.innerHTML = searchHtml + html;
 
+        container.addEventListener('click', (e) => {
+            const bibtexBtn = e.target.closest('.bibtex-link');
+            if (bibtexBtn) {
+                const key = bibtexBtn.dataset.key;
+                const pub = allPublications.find(p => p.key === key);
+                if (pub && pub.raw) {
+                    showModal(pub.raw);
+                }
+            }
+        });
+
         const searchInput = container.querySelector('#bibtex-search-input');
         if (searchInput) {
             searchInput.value = searchQuery;
@@ -348,6 +406,29 @@
                 searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
             }
         }
+    }
+
+    function showModal(raw) {
+        const modal = document.createElement('div');
+        modal.className = 'bibtex-modal';
+        modal.innerHTML = `
+            <div class="bibtex-modal-content">
+                <span class="bibtex-modal-close">&times;</span>
+                <div style="font-weight: 600; font-size: 1.1em; margin-bottom: 0.5rem;">BibTeX Entry</div>
+                <pre class="bibtex-modal-pre">${raw}</pre>
+                <button class="bibtex-copy-btn">Copy to Clipboard</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('.bibtex-modal-close').onclick = () => modal.remove();
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        modal.querySelector('.bibtex-copy-btn').onclick = (e) => {
+            navigator.clipboard.writeText(raw).then(() => {
+                e.target.textContent = 'Copied!';
+                setTimeout(() => e.target.textContent = 'Copy to Clipboard', 2000);
+            });
+        };
     }
 
     function renderPub(pub) {
@@ -369,8 +450,14 @@
         }
 
         let links = '';
-        // if (pub.url) links += `<a href="${pub.url}" target="_blank">📄 PDF</a>`;
-        if (pub.doi) links += `<a href="https://doi.org/${pub.doi}" target="_blank">🔗 DOI</a>`;
+        if (pub.raw) {
+            links += `<a href="#" class="bibtex-link" data-key="${pub.key}" onclick="return false;">BibTeX</a>`;
+        }
+        const pdfLink = pub.pdfUrl || pub.url;
+        if (pdfLink) {
+            links += `<a href="${pdfLink}" target="_blank">PDF</a>`;
+        }
+        if (pub.doi) links += `<a href="https://doi.org/${pub.doi}" target="_blank">DOI</a>`;
 
         return `<div class="bibtex-pub">
             <div class="bibtex-title">${titleHtml}${badge}</div>
@@ -381,7 +468,7 @@
                     ${pub.awards.map(award => `<span class="bibtex-award">🏆 ${award}</span>`).join('')}
                 </div>
             ` : ''}
-            ${links ? `<div class="bibtex-links">${links}</div>` : ''}
+            <div class="bibtex-links">${links}</div>
         </div>`;
     }
 

@@ -66,8 +66,15 @@ function renderPublicationCard(pub, index, showYear = false) {
 function generateLinks(pub) {
   const links = [];
 
-  if (pub.pdfUrl) {
-    links.push(`<a href="${pub.pdfUrl}" class="pub-link" target="_blank" rel="noopener">PDF</a>`);
+  // BibTeX link
+  if (pub.raw) {
+    links.push(`<a href="#" class="pub-link bibtex-link" data-key="${pub.key}" onclick="return false;">BibTeX</a>`);
+  }
+
+  // PDF link
+  const pdfLink = pub.pdfUrl || pub.url;
+  if (pdfLink) {
+    links.push(`<a href="${pdfLink}" class="pub-link" target="_blank" rel="noopener">PDF</a>`);
   }
 
   if (pub.doi) {
@@ -77,8 +84,6 @@ function generateLinks(pub) {
   if (pub.eprint) {
     links.push(`<a href="https://arxiv.org/abs/${pub.eprint}" class="pub-link" target="_blank" rel="noopener">arXiv</a>`);
   }
-
-
 
   return links;
 }

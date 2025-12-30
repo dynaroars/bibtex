@@ -21,6 +21,11 @@ const exportFormat = document.getElementById('exportFormat');
 const searchInput = document.getElementById('searchInput');
 const excludePreprints = document.getElementById('excludePreprints');
 
+const bibtexModal = document.getElementById('bibtexModal');
+const bibtexContent = document.getElementById('bibtexContent');
+const closeModal = document.getElementById('closeModal');
+const copyBibtex = document.getElementById('copyBibtex');
+
 const DEFAULT_BIB_URL = 'https://raw.githubusercontent.com/dynaroars/latex-cv/main/cv.bib';
 
 function init() {
@@ -87,6 +92,46 @@ function setupEventListeners() {
     excludePreprints.addEventListener('change', () => {
         displayPublications();
     });
+
+    publicationsContainer.addEventListener('click', (e) => {
+        const bibtexBtn = e.target.closest('.bibtex-link');
+        if (bibtexBtn) {
+            const key = bibtexBtn.dataset.key;
+            const pub = currentPublications.find(p => p.key === key);
+            if (pub && pub.raw) {
+                showBibtexModal(pub.raw);
+            }
+        }
+    });
+
+    closeModal.addEventListener('click', hideBibtexModal);
+
+    window.addEventListener('click', (e) => {
+        if (e.target === bibtexModal) hideBibtexModal();
+    });
+
+    copyBibtex.addEventListener('click', () => {
+        navigator.clipboard.writeText(bibtexContent.textContent).then(() => {
+            const originalText = copyBibtex.textContent;
+            copyBibtex.textContent = 'Copied!';
+            copyBibtex.classList.add('btn-success');
+            setTimeout(() => {
+                copyBibtex.textContent = originalText;
+                copyBibtex.classList.remove('btn-success');
+            }, 2000);
+        });
+    });
+}
+
+function showBibtexModal(raw) {
+    bibtexContent.textContent = raw;
+    bibtexModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideBibtexModal() {
+    bibtexModal.classList.add('hidden');
+    document.body.style.overflow = '';
 }
 
 function handleFileSelect(e) {
@@ -136,6 +181,11 @@ async function loadFromUrl(url) {
     if (!url) {
         showError('Please enter a URL');
         return;
+    }
+
+    if (!url.match(/^https?:\/\//i)) {
+        url = 'https://' + url;
+        urlInput.value = url;
     }
 
     try {

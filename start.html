@@ -40,7 +40,7 @@
         }
 
         .container {
-            max-width: 700px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 3rem 1.5rem;
             flex: 1;
@@ -220,6 +220,9 @@
 <body>
     <div class="container">
         <header>
+            <a href="./"
+                style="display: inline-block; margin-bottom: 1rem; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">←
+                Back to Parser</a>
             <h1>📚 BibTeX Embed</h1>
             <p>Display your publications on any website</p>
         </header>
@@ -254,7 +257,6 @@
     </div>
 
     <footer>
-        <a href="./">← Back to BibTeX Parser</a> ·
         <a href="https://github.com/dynaroars/bibtex" target="_blank">GitHub</a>
     </footer>
 
@@ -285,8 +287,8 @@
             const encodedUrl = encodeURIComponent(rawUrl);
             const baseUrl = window.location.origin + window.location.pathname.replace('/start.html', '').replace('/start', '');
 
-            const embedCode = `<script src="${baseUrl}/embed.js?bib=${encodedUrl}"><\/script>`;
             const directUrl = `${baseUrl}/?bib=${encodedUrl}`;
+            const embedCode = `<iframe src="${directUrl}" width="100%" height="800" frameborder="0" style="border: 1px solid #eee; border-radius: 8px;"></iframe>`;
 
             embedCodeEl.textContent = embedCode;
             directLinkEl.href = directUrl;
@@ -294,16 +296,8 @@
 
             outputSection.classList.add('visible');
 
-            previewContainer.innerHTML = '<p style="color: #666; font-style: italic;">Loading preview...</p>';
-
-            const existingScript = document.getElementById('previewScript');
-            if (existingScript) existingScript.remove();
-
-            const script = document.createElement('script');
-            script.id = 'previewScript';
-            script.src = `${baseUrl}/embed.js?bib=${encodedUrl}&_t=${Date.now()}`;
-            previewContainer.innerHTML = '';
-            previewContainer.appendChild(script);
+            // Preview using iframe
+            previewContainer.innerHTML = `<iframe src="${directUrl}" width="100%" height="600" frameborder="0" style="border: 1px solid #ddd; border-radius: 8px;"></iframe>`;
         });
 
         copyBtn.addEventListener('click', () => {

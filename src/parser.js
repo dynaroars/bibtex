@@ -48,31 +48,46 @@ function extractEntries(content) {
     while ((match = entryPattern.exec(content)) !== null) {
         const type = match[1].toLowerCase();
         const key = match[2];
-        const startPos = match.index + match[0].length;
+        const startPos = match.index;
 
         if (['preamble', 'string', 'comment'].includes(type)) continue;
 
-        const fieldsContent = extractFieldsContent(content, startPos);
+        const { fieldsContent, rawContent } = extractEntryContent(content, startPos);
         if (fieldsContent) {
             const fields = parseFields(fieldsContent);
-            entries.push({ type, key, fields, index: index++ });
+            entries.push({ type, key, fields, raw: rawContent, index: index++ });
         }
     }
 
     return entries;
 }
 
-function extractFieldsContent(content, startPos) {
-    let braceCount = 1;
+function extractEntryContent(content, startPos) {
+    let braceCount = 0;
     let pos = startPos;
+    let foundFirstBrace = false;
+    let fieldsStart = -1;
 
-    while (pos < content.length && braceCount > 0) {
-        if (content[pos] === '{') braceCount++;
-        else if (content[pos] === '}') braceCount--;
+    while (pos < content.length) {
+        if (content[pos] === '{') {
+            if (!foundFirstBrace) {
+                foundFirstBrace = true;
+                fieldsStart = pos + 1;
+            }
+            braceCount++;
+        } else if (content[pos] === '}') {
+            braceCount--;
+            if (foundFirstBrace && braceCount === 0) {
+                return {
+                    fieldsContent: content.slice(fieldsStart, pos),
+                    rawContent: content.slice(startPos, pos + 1)
+                };
+            }
+        }
         pos++;
     }
 
-    return braceCount === 0 ? content.slice(startPos, pos - 1) : null;
+    return { fieldsContent: null, rawContent: null };
 }
 
 function parseFields(content) {
@@ -170,7 +185,7 @@ function normalizeEntry(entry, stringDefs) {
     const effectiveUrl = pdfUrl || finalUrl;
 
     const typePriority = {
-        'book': 0,  
+        'book': 0,
         'conference': 1,
         'journal': 2,
         'techreport': 3,
@@ -195,7 +210,8 @@ function normalizeEntry(entry, stringDefs) {
         publisher: fields.publisher || null,
         volume: fields.volume || null,
         number: fields.number || null,
-        originalIndex: entry.index
+        originalIndex: entry.index,
+        raw: entry.raw
     };
 }
 
