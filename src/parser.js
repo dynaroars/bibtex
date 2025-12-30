@@ -170,11 +170,13 @@ function normalizeEntry(entry, stringDefs) {
     const effectiveUrl = pdfUrl || finalUrl;
 
     const typePriority = {
+        'book': 0,  
         'conference': 1,
         'journal': 2,
         'techreport': 3,
-        'preprint': 4,
-        'misc': 5
+        'thesis': 4,
+        'preprint': 5,
+        'misc': 6
     };
 
     return {
@@ -242,10 +244,12 @@ export function groupByYear(publications) {
 
 export function groupByType(publications) {
     const typeNames = {
+        book: 'Books',
         journal: 'Journal Articles',
         conference: 'Conference Papers',
         preprint: 'Preprints',
         techreport: 'Technical Reports',
+        thesis: 'Theses',
         misc: 'Other'
     };
 
@@ -258,7 +262,7 @@ export function groupByType(publications) {
     });
 
     // Explicit order: Conference, Journal, Tech Report, Preprint, Misc
-    const order = ['conference', 'journal', 'techreport', 'preprint', 'misc'];
+    const order = ['book', 'conference', 'journal', 'techreport', 'thesis', 'preprint', 'misc'];
 
     return order
         .filter(type => grouped[type] && grouped[type].length > 0)
