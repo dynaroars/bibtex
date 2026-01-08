@@ -45,7 +45,7 @@ function renderPublicationCard(pub, index, showYear = false) {
                 <p class="pub-authors">${sanitizeLatexHtml(pub.authors)}</p>
                 <div class="pub-venue">
                     ${pub.venue ? `<span><em>${sanitizeLatexHtml(pub.venue)}</em></span>` : ''}
-                    ${pub.volume ? `<span>${pub.volume}${pub.number ? `.${pub.number}` : ''}</span>` : ''}
+                    ${(pub.volume || pub.number) ? `<span>${pub.volume || ''}${pub.volume && pub.number ? '.' : ''}${pub.number || ''}</span>` : ''}
                     ${showYear && pub.year ? `<span>(${pub.year})</span>` : ''}
                     ${pub.publisher ? `<span>${sanitizeLatexHtml(pub.publisher)}</span>` : ''}
                     ${pub.pages ? `<span>pages ${pub.pages}</span>` : (pub.year >= new Date().getFullYear() ? '<span>to appear</span>' : '')}
