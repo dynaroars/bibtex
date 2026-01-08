@@ -21,7 +21,7 @@
                 <p class="pub-authors">${b(e.authors)}</p>
                 <div class="pub-venue">
                     ${e.venue?`<span><em>${b(e.venue)}</em></span>`:""}
-                    ${e.volume?`<span>${e.volume}${e.number?`.${e.number}`:""}</span>`:""}
+                    ${e.volume||e.number?`<span>${e.volume||""}${e.volume&&e.number?".":""}${e.number||""}</span>`:""}
                     ${n&&e.year?`<span>(${e.year})</span>`:""}
                     ${e.publisher?`<span>${b(e.publisher)}</span>`:""}
                     ${e.pages?`<span>pages ${e.pages}</span>`:e.year>=new Date().getFullYear()?"<span>to appear</span>":""}
