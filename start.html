@@ -15,12 +15,31 @@
     <style>
         :root {
             --bg-color: #ffffff;
-            --text-color: #111111;
-            --text-secondary: #666666;
-            --border-color: #e0e0e0;
+            --text-color: hsl(0, 0%, 0%);
+            --text-primary: #000000;
+            --text-secondary: #000000;
             --accent-color: #333333;
+            --card-bg: #ffffff;
+            --border-color: #000000;
+            --hover-bg: #f5f5f5;
+            --primary-color: #000000;
+            --primary-light: #eff6ff;
             --font-heading: 'Outfit', sans-serif;
             --font-body: 'Inter', sans-serif;
+        }
+
+        /* Dark Mode Overrides */
+        [data-theme="dark"] {
+            --bg-color: #1a1d21;
+            --text-color: #e0e0e0;
+            --text-primary: #ffffff;
+            --text-secondary: #ababad;
+            --accent-color: #36c5f0;
+            --card-bg: #222529;
+            --border-color: #3d4043;
+            --hover-bg: #2c2f33;
+            --primary-color: #36c5f0;
+            --primary-light: #2c3e50;
         }
 
         * {
@@ -33,6 +52,7 @@
             font-family: var(--font-body);
             background: var(--bg-color);
             color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
@@ -56,6 +76,7 @@
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
 
         header p {
@@ -64,7 +85,7 @@
         }
 
         .input-section {
-            background: #fafafa;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 2rem;
             margin-bottom: 2rem;
@@ -74,6 +95,7 @@
             display: block;
             font-weight: 600;
             margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
 
         .input-group {
@@ -87,6 +109,8 @@
             border: 1px solid var(--border-color);
             font-size: 1rem;
             font-family: var(--font-body);
+            background: var(--bg-color);
+            color: var(--text-color);
         }
 
         .input-group input:focus {
@@ -123,6 +147,7 @@
             font-family: var(--font-heading);
             font-size: 1.25rem;
             margin-bottom: 1rem;
+            color: var(--text-primary);
         }
 
         .code-block {
@@ -173,22 +198,24 @@
             font-family: var(--font-heading);
             font-size: 1.25rem;
             margin-bottom: 1rem;
+            color: var(--text-primary);
         }
 
         .direct-link {
             margin-top: 1.5rem;
             padding: 1rem;
-            background: #f5f5f5;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
         }
 
         .direct-link h3 {
             font-size: 0.9rem;
             margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
 
         .direct-link a {
-            color: #0066cc;
+            color: var(--primary-color);
             word-break: break-all;
         }
 
@@ -214,10 +241,69 @@
             font-size: 0.9rem;
             margin-top: 0.75rem;
         }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-toggle .sun-icon {
+            display: none;
+        }
+
+        .theme-toggle .moon-icon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .sun-icon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .moon-icon {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Theme toggle button -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="sun-icon">☀️</span>
+        <span class="moon-icon">🌙</span>
+    </button>
+
+    <script>
+        // Apply saved theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initialTheme = savedTheme || (systemDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', initialTheme);
+    </script>
+
     <div class="container">
         <header>
             <a href="./"
@@ -275,6 +361,21 @@
             }
             return url;
         }
+
+        function setupThemeToggle() {
+            const toggle = document.getElementById('theme-toggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+            });
+        }
+
+        // Initialize theme toggle
+        setupThemeToggle();
 
         generateBtn.addEventListener('click', () => {
             let url = bibUrlInput.value.trim();

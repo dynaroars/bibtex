@@ -1,17 +1,39 @@
+/* =========================================
+   1. Design System & Variables
+   ========================================= */
 :root {
   --bg-color: #ffffff;
-  --text-color: #000000;
-  --text-secondary: #666666;
+  --text-color: hsl(0, 0%, 0%);
+  --text-primary: #000000;
+  --text-secondary: #000000;
   --accent-color: #333333;
   --card-bg: #ffffff;
-  --border-color: #ddd;
+  --border-color: #000000;
   --hover-bg: #f5f5f5;
+  --primary-color: #000000;
+  --primary-light: #eff6ff;
   --bg-secondary: #f9f9f9;
 
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
 
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --bg-color: #1a1d21;
+  --text-color: #e0e0e0;
+  --text-primary: #ffffff;
+  --text-secondary: #ababad;
+  --accent-color: #36c5f0;
+  --card-bg: #222529;
+  --border-color: #3d4043;
+  --hover-bg: #2c2f33;
+  --primary-color: #36c5f0;
+  --primary-light: #2c3e50;
+  --bg-secondary: #2c2f33;
+}
+
+/* Base Styles using variables */
 * {
   margin: 0;
   padding: 0;
@@ -22,6 +44,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-color);
   font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
   line-height: 1.6;
 }
@@ -43,7 +66,7 @@ h1 {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
-  color: #111;
+  color: var(--text-primary);
 }
 
 header p {
@@ -125,6 +148,7 @@ header p {
   font-size: 0.85rem;
   font-family: var(--font-body);
   background: var(--bg-color);
+  color: var(--text-color);
 }
 
 .url-row input[type="url"]:focus {
@@ -309,10 +333,14 @@ header p {
   cursor: pointer;
   font-family: var(--font-body);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23000'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
   background-size: 1rem;
+}
+
+[data-theme="dark"] .export-dropdown select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23e0e0e0'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
 }
 
 .export-dropdown select:hover {
@@ -427,7 +455,7 @@ header p {
   font-family: var(--font-heading);
   font-size: 1.1rem;
   font-weight: 600;
-  color: #111;
+  color: var(--text-primary);
 }
 
 .year-count {
@@ -445,7 +473,7 @@ header p {
 .pub-card {
   background: transparent;
   border: none;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
   padding: 0.75rem 0;
   display: block;
 }
@@ -488,7 +516,7 @@ header p {
   font-weight: 500;
   margin: 0 0 0.25rem;
   line-height: 1.5;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .pub-title a {
@@ -501,13 +529,13 @@ header p {
 }
 
 .pub-authors {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.9em;
   margin-bottom: 0.25rem;
 }
 
 .pub-venue {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85em;
   font-style: italic;
 }
@@ -749,4 +777,52 @@ footer a:hover {
   .url-input-group {
     flex-direction: column;
   }
+}
+
+/* =========================================
+   2. Theme Toggle Button Styles
+   ========================================= */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .theme-toggle {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Icon Switching */
+.theme-toggle .sun-icon {
+  display: none;
+}
+
+.theme-toggle .moon-icon {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle .moon-icon {
+  display: none;
 }

@@ -2,6 +2,25 @@ import { parseBibTeX, groupByYear, groupByType, groupByOriginal } from './parser
 import { parseCSV } from './csvParser.js';
 import { renderPublications, updateStats } from './renderer.js';
 
+function setupThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', () => {
+        // Get current theme, default to light
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        // Switch to opposite
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+        // Apply new theme
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', setupThemeToggle);
+
 // State
 let currentFileType = 'bib';
 let currentPublications = [];
