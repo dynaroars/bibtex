@@ -12,11 +12,25 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/bibtex/assets/index-B7grNZAT.js"></script>
-  <link rel="stylesheet" crossorigin href="/bibtex/assets/index-Giu_61Dv.css">
+  <script type="module" crossorigin src="/bibtex/assets/index-CzUTzB84.js"></script>
+  <link rel="stylesheet" crossorigin href="/bibtex/assets/index-CTP8M4LC.css">
 </head>
 
 <body>
+  <!-- Theme toggle button -->
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+    <span class="sun-icon">☀️</span>
+    <span class="moon-icon">🌙</span>
+  </button>
+  
+  <script>
+    // Apply saved theme immediately to prevent flash
+    const savedTheme = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || (systemDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  </script>
+
   <div id="app">
     <header>
       <h1>BibTeX Parser</h1>
