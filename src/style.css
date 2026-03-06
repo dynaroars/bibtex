@@ -197,6 +197,7 @@ header p {
   border: 1px solid var(--border-color);
   font-family: var(--font-body);
   background: var(--bg-color);
+  color: var(--text-color);
 }
 
 .search-filter input[type="search"]:focus {
@@ -573,6 +574,29 @@ header p {
   padding: 0.15em 0.5em;
   border-radius: 3px;
   font-weight: 500;
+}
+
+.pub-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pub-keyword {
+  display: inline-block;
+  font-size: 0.8em;
+  color: var(--primary-color);
+  background: var(--primary-light);
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pub-keyword:hover {
+  background: var(--hover-bg);
 }
 
 .pub-links {

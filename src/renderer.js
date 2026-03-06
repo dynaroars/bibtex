@@ -55,6 +55,11 @@ function renderPublicationCard(pub, index, showYear = false) {
                         ${pub.awards.map(award => `<span class="pub-award">🏆 ${sanitizeLatexHtml(award)}</span>`).join('')}
                     </div>
                 ` : ''}
+                ${pub.keywords && pub.keywords.length > 0 ? `
+                    <div class="pub-keywords">
+                        ${pub.keywords.map(kw => `<span class="pub-keyword" data-keyword="${sanitizeLatexHtml(kw)}">#${sanitizeLatexHtml(kw)}</span>`).join('')}
+                    </div>
+                ` : ''}
                 ${links.length > 0 ? `
                     <div class="pub-links">
                         ${links.join('')}

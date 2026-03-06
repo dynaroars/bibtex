@@ -107,6 +107,16 @@ function setupEventListeners() {
     });
 
     publicationsContainer.addEventListener('click', (e) => {
+        const keywordBtn = e.target.closest('.pub-keyword');
+        if (keywordBtn) {
+            const keyword = keywordBtn.dataset.keyword;
+            searchInput.value = '#' + keyword;
+            searchQuery = searchInput.value.toLowerCase().trim();
+            displayPublications();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         const bibtexBtn = e.target.closest('.bibtex-link');
         if (bibtexBtn) {
             const key = bibtexBtn.dataset.key;
@@ -293,7 +303,8 @@ function displayPublications() {
                 pub.authors,
                 pub.venue,
                 pub.year?.toString(),
-                pub.type
+                pub.type,
+                ...(pub.keywords?.map(k => '#' + k) || [])
             ].filter(Boolean).join(' ').toLowerCase();
 
             return searchFields.includes(searchQuery);

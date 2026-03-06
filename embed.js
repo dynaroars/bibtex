@@ -121,9 +121,11 @@
             width: 100%;
             padding: 0.5rem 0.75rem;
             font-size: 0.9em;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color, #ddd);
             border-radius: 4px;
             font-family: inherit;
+            color: inherit;
+            background: transparent;
         }
         .bibtex-search input:focus {
             outline: none;
@@ -199,6 +201,13 @@
             border-radius: 4px;
             font-size: 0.8em;
             cursor: pointer;
+        }
+        .bibtex-keywords { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+        .bibtex-keyword { display: inline-block; font-size: 0.8em; color: #0066cc; background: rgba(0, 102, 204, 0.1); padding: 0.15em 0.5em; border-radius: 3px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .bibtex-keyword:hover { background: rgba(0, 102, 204, 0.2); }
+        @media (prefers-color-scheme: dark) {
+            .bibtex-keyword { color: #36c5f0; background: rgba(54, 197, 240, 0.15); }
+            .bibtex-keyword:hover { background: rgba(54, 197, 240, 0.25); }
         }
     `;
     document.head.appendChild(style);
@@ -339,7 +348,8 @@
             doi: fields.doi || null,
             url: effectiveUrl,
             raw: raw,
-            awards: fields.note_award ? fields.note_award.split(';').map(a => cleanLatex(a.trim())).filter(Boolean) : []
+            awards: fields.note_award ? fields.note_award.split(';').map(a => cleanLatex(a.trim())).filter(Boolean) : [],
+            keywords: fields.keywords ? fields.keywords.split(',').map(a => cleanLatex(a.trim())).filter(Boolean) : []
         };
     }
 
@@ -365,7 +375,8 @@
             filtered = publications.filter(pub => {
                 return (pub.title && pub.title.toLowerCase().includes(query)) ||
                     (pub.authors && pub.authors.toLowerCase().includes(query)) ||
-                    (pub.venue && pub.venue.toLowerCase().includes(query));
+                    (pub.venue && pub.venue.toLowerCase().includes(query)) ||
+                    (pub.keywords && pub.keywords.map(k => '#' + k.toLowerCase()).join(' ').includes(query));
             });
         }
 
@@ -387,6 +398,16 @@
         container.innerHTML = searchHtml + html;
 
         container.addEventListener('click', (e) => {
+            const keywordBtn = e.target.closest('.bibtex-keyword');
+            if (keywordBtn) {
+                const searchInput = container.querySelector('#bibtex-search-input');
+                if (searchInput) {
+                    searchInput.value = '#' + keywordBtn.dataset.keyword;
+                    render(allPublications, searchInput.value.toLowerCase().trim());
+                }
+                return;
+            }
+
             const bibtexBtn = e.target.closest('.bibtex-link');
             if (bibtexBtn) {
                 const key = bibtexBtn.dataset.key;
@@ -468,6 +489,11 @@
             ${pub.awards && pub.awards.length > 0 ? `
                 <div class="bibtex-awards">
                     ${pub.awards.map(award => `<span class="bibtex-award">🏆 ${award}</span>`).join('')}
+                </div>
+            ` : ''}
+            ${pub.keywords && pub.keywords.length > 0 ? `
+                <div class="bibtex-keywords">
+                    ${pub.keywords.map(kw => `<span class="bibtex-keyword" data-keyword="${kw}">#${kw}</span>`).join('')}
                 </div>
             ` : ''}
             <div class="bibtex-links">${links}</div>

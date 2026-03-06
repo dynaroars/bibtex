@@ -208,6 +208,7 @@ function normalizeEntry(entry, stringDefs) {
         url: effectiveUrl,
         note: fields.note ? cleanLatex(fields.note) : null,
         awards: fields.note_award ? fields.note_award.split(';').map(a => cleanLatex(a.trim())).filter(Boolean) : [],
+        keywords: fields.keywords ? fields.keywords.split(',').map(k => cleanLatex(k.trim())).filter(Boolean) : [],
         publisher: fields.publisher || null,
         volume: fields.volume || null,
         number: fields.number || null,
