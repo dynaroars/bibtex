@@ -54,8 +54,52 @@ function init() {
     const customBibUrl = params.get('bib');
     const bibUrl = customBibUrl || DEFAULT_BIB_URL;
 
+    const initialSearch = params.get('q');
+    if (initialSearch) {
+        searchQuery = initialSearch.toLowerCase().trim();
+        searchInput.value = initialSearch;
+    }
+    const initialGroup = params.get('group');
+    if (initialGroup) {
+        currentGrouping = initialGroup;
+        const targetBtn = Array.from(groupButtons).find(btn => btn.dataset.group === initialGroup);
+        if (targetBtn) {
+            groupButtons.forEach(b => b.classList.remove('active'));
+            targetBtn.classList.add('active');
+        }
+    }
+
+    const initialExclude = params.get('exclude_preprints');
+    if (initialExclude === 'true') {
+        excludePreprints.checked = true;
+    }
+
     urlInput.value = bibUrl;
     loadFromUrl(bibUrl);
+}
+
+function updateUrl() {
+    const params = new URLSearchParams();
+
+    const bibUrl = urlInput.value.trim();
+    if (bibUrl && bibUrl !== DEFAULT_BIB_URL) {
+        params.set('bib', bibUrl);
+    }
+
+    if (searchQuery) {
+        params.set('q', searchQuery);
+    }
+
+    if (currentGrouping) {
+        params.set('group', currentGrouping);
+    }
+
+    if (excludePreprints.checked) {
+        params.set('exclude_preprints', 'true');
+    }
+
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
 }
 
 function setupEventListeners() {
@@ -86,6 +130,7 @@ function setupEventListeners() {
             groupButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentGrouping = btn.dataset.group;
+            updateUrl();
             displayPublications();
         });
     });
@@ -99,10 +144,12 @@ function setupEventListeners() {
 
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value.toLowerCase().trim();
+        updateUrl();
         displayPublications();
     });
 
     excludePreprints.addEventListener('change', () => {
+        updateUrl();
         displayPublications();
     });
 
@@ -112,6 +159,7 @@ function setupEventListeners() {
             const keyword = keywordBtn.dataset.keyword;
             searchInput.value = '#' + keyword;
             searchQuery = searchInput.value.toLowerCase().trim();
+            updateUrl();
             displayPublications();
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
@@ -190,6 +238,8 @@ function handleDrop(e) {
 function readFile(file) {
     showLoading(true);
     currentFileType = file.name.endsWith('.csv') ? 'csv' : 'bib';
+    urlInput.value = '';
+    updateUrl();
 
     const reader = new FileReader();
     reader.onload = (e) => processContent(e.target.result, currentFileType);
@@ -223,6 +273,7 @@ async function loadFromUrl(url) {
         urlInput.value = url;
     }
 
+    updateUrl();
     currentFileType = url.toLowerCase().endsWith('.csv') ? 'csv' : 'bib';
     showLoading(true);
 
