@@ -45,7 +45,7 @@ const bibtexContent = document.getElementById('bibtexContent');
 const closeModal = document.getElementById('closeModal');
 const copyBibtex = document.getElementById('copyBibtex');
 
-const DEFAULT_BIB_URL = 'https://raw.githubusercontent.com/dynaroars/latex-cv/main/cv.bib';
+const DEFAULT_BIB_URL = 'https://tvn.roars.dev/cv/cv.bib';
 
 function init() {
     setupEventListeners();

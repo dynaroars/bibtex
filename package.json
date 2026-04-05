@@ -10,7 +10,7 @@
     "deploy": "npm run build && cd dist && git init && git add -A && git commit -m 'deploy' --allow-empty && git push -f https://github.com/dynaroars/bibtex.git main:gh-pages"
   },
   "devDependencies": {
-    "vite": "^5.4.2"
+    "vite": "^8.0.3"
   },
   "dependencies": {
     "bibtex-parse": "^2.1.0"
