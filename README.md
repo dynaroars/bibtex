@@ -1,6 +1,6 @@
 # BibTeX Parser
 
-Parse and display your academic publications.  See demo at `https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib`.
+Parse and display your academic publications.  See demo at [https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib](https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib).
 
 ## Features
 
