@@ -1,44 +1,20 @@
 import { parseBibTeX, groupByYear, groupByType, groupByOriginal } from './parser.js';
-import { parseCSV } from './csvParser.js';
-import { renderPublications, updateStats } from './renderer.js';
+import { renderPublications, updateStats, escapeHtml } from './renderer.js';
 
-function setupThemeToggle() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
-
-    toggle.addEventListener('click', () => {
-        // Get current theme, default to light
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        // Switch to opposite
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
-        // Apply new theme
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    });
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', setupThemeToggle);
-
-// State
-let currentFileType = 'bib';
+// Application State
 let currentPublications = [];
-let currentGrouping = '';
+let currentGrouping = 'default';
 let searchQuery = '';
 
 // DOM Elements
-const fileInput = document.getElementById('fileInput');
-const dropZone = document.getElementById('dropZone');
 const urlInput = document.getElementById('urlInput');
 const loadUrlBtn = document.getElementById('loadUrlBtn');
-const publicationsContainer = document.getElementById('publications-container');
-const filtersSection = document.getElementById('filtersSection');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const groupButtons = document.querySelectorAll('.group-btn');
-const exportFormat = document.getElementById('exportFormat');
+const fileInput = document.getElementById('fileInput');
 const searchInput = document.getElementById('searchInput');
 const excludePreprints = document.getElementById('excludePreprints');
+const groupButtons = document.querySelectorAll('.group-btn');
+const publicationsContainer = document.getElementById('publications-container');
+const backToTopBtn = document.getElementById('back-to-top');
 
 const bibtexModal = document.getElementById('bibtexModal');
 const bibtexContent = document.getElementById('bibtexContent');
@@ -48,458 +24,378 @@ const copyBibtex = document.getElementById('copyBibtex');
 const DEFAULT_BIB_URL = 'https://tvn.roars.dev/cv/cv.bib';
 
 function init() {
-    setupEventListeners();
+  setupEventListeners();
 
-    const params = new URLSearchParams(window.location.search);
-    const customBibUrl = params.get('bib');
-    const bibUrl = customBibUrl || DEFAULT_BIB_URL;
+  const params = new URLSearchParams(window.location.search);
+  const customBibUrl = params.get('bib');
+  const bibUrl = customBibUrl || DEFAULT_BIB_URL;
 
-    const initialSearch = params.get('q');
-    if (initialSearch) {
-        searchQuery = initialSearch.toLowerCase().trim();
-        searchInput.value = initialSearch;
-    }
-    const initialGroup = params.get('group');
-    if (initialGroup) {
-        currentGrouping = initialGroup;
-        const targetBtn = Array.from(groupButtons).find(btn => btn.dataset.group === initialGroup);
-        if (targetBtn) {
-            groupButtons.forEach(b => b.classList.remove('active'));
-            targetBtn.classList.add('active');
-        }
-    }
+  const initialSearch = params.get('q');
+  if (initialSearch) {
+    searchQuery = initialSearch.toLowerCase().trim();
+    searchInput.value = initialSearch;
+  }
 
-    const initialExclude = params.get('exclude_preprints');
-    if (initialExclude === 'true') {
-        excludePreprints.checked = true;
-    }
+  const initialGroup = params.get('group');
+  if (initialGroup && ['default', 'original', 'year', 'type'].includes(initialGroup)) {
+    currentGrouping = initialGroup === 'original' ? 'default' : initialGroup;
+    groupButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.group === currentGrouping);
+    });
+  }
 
-    urlInput.value = bibUrl;
-    loadFromUrl(bibUrl);
+  const initialExclude = params.get('exclude_preprints');
+  if (initialExclude !== null) {
+    excludePreprints.checked = initialExclude === 'true';
+  }
+
+  urlInput.value = bibUrl;
+  loadFromUrl(bibUrl);
 }
 
 function updateUrl() {
-    const params = new URLSearchParams();
+  const params = new URLSearchParams();
+  const bibUrl = urlInput.value.trim();
 
-    const bibUrl = urlInput.value.trim();
-    if (bibUrl && bibUrl !== DEFAULT_BIB_URL) {
-        params.set('bib', bibUrl);
-    }
+  if (bibUrl && bibUrl !== DEFAULT_BIB_URL) {
+    params.set('bib', bibUrl);
+  }
+  if (searchQuery) {
+    params.set('q', searchQuery);
+  }
+  if (currentGrouping && currentGrouping !== 'default' && currentGrouping !== 'original') {
+    params.set('group', currentGrouping);
+  }
+  if (!excludePreprints.checked) {
+    params.set('exclude_preprints', 'false');
+  }
 
-    if (searchQuery) {
-        params.set('q', searchQuery);
-    }
-
-    if (currentGrouping) {
-        params.set('group', currentGrouping);
-    }
-
-    if (excludePreprints.checked) {
-        params.set('exclude_preprints', 'true');
-    }
-
-    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
-    window.history.replaceState({}, '', newUrl);
+  const newSearch = params.toString() ? `?${params.toString()}` : '';
+  const newUrl = `${window.location.pathname}${newSearch}`;
+  window.history.replaceState({}, '', newUrl);
 }
 
 function setupEventListeners() {
-    fileInput.addEventListener('change', handleFileSelect);
+  // URL and file loading
+  loadUrlBtn.addEventListener('click', () => loadFromUrl(urlInput.value));
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadFromUrl(urlInput.value);
+  });
 
-    dropZone.addEventListener('dragover', handleDragOver);
-    dropZone.addEventListener('dragleave', handleDragLeave);
-    dropZone.addEventListener('drop', handleDrop);
-    dropZone.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !e.target.closest('.url-row')) {
-            fileInput.click();
-        }
-    });
+  fileInput.addEventListener('change', handleFileSelect);
 
-    loadUrlBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        loadFromUrl(urlInput.value);
-    });
-    urlInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') loadFromUrl(urlInput.value);
-    });
-    urlInput.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
+  // Drag & drop on window
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file && (file.name.endsWith('.bib') || file.name.endsWith('.bibtex') || file.name.endsWith('.txt'))) {
+      readFile(file);
+    }
+  });
 
-    groupButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            groupButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentGrouping = btn.dataset.group;
-            updateUrl();
-            displayPublications();
-        });
+  // Search and filters
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value.toLowerCase().trim();
+    updateUrl();
+    displayPublications();
+  });
+
+  excludePreprints.addEventListener('change', () => {
+    updateUrl();
+    displayPublications();
+  });
+
+  groupButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      groupButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentGrouping = btn.dataset.group || 'default';
+      updateUrl();
+      displayPublications();
     });
+  });
 
-    exportFormat.addEventListener('change', (e) => {
-        if (e.target.value && currentPublications.length > 0) {
-            exportPublications(e.target.value);
-            e.target.value = '';
-        }
+  // Delegated clicks inside publications container
+  publicationsContainer.addEventListener('click', (e) => {
+    const keywordBtn = e.target.closest('.pub-keyword-btn');
+    if (keywordBtn) {
+      const keyword = keywordBtn.dataset.keyword;
+      searchInput.value = `#${keyword}`;
+      searchQuery = `#${keyword}`.toLowerCase().trim();
+      updateUrl();
+      displayPublications();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const bibtexBtn = e.target.closest('.bibtex-link');
+    if (bibtexBtn) {
+      const key = bibtexBtn.dataset.key;
+      const pub = currentPublications.find(p => p.key === key);
+      if (pub && pub.raw) {
+        showBibtexModal(pub.raw);
+      }
+    }
+  });
+
+  // Back to Top Button
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (backToTopBtn) {
+        backToTopBtn.hidden = window.scrollY <= 300;
+      }
+    },
+    { passive: true }
+  );
+
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+  }
 
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase().trim();
-        updateUrl();
-        displayPublications();
+  // Modal actions
+  closeModal.addEventListener('click', hideBibtexModal);
+  window.addEventListener('click', (e) => {
+    if (e.target === bibtexModal) hideBibtexModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !bibtexModal.classList.contains('hidden')) {
+      hideBibtexModal();
+    }
+  });
+
+  copyBibtex.addEventListener('click', () => {
+    navigator.clipboard.writeText(bibtexContent.textContent || '').then(() => {
+      const orig = copyBibtex.textContent;
+      copyBibtex.textContent = 'Copied!';
+      setTimeout(() => {
+        copyBibtex.textContent = orig;
+      }, 1800);
     });
-
-    excludePreprints.addEventListener('change', () => {
-        updateUrl();
-        displayPublications();
-    });
-
-    publicationsContainer.addEventListener('click', (e) => {
-        const keywordBtn = e.target.closest('.pub-keyword');
-        if (keywordBtn) {
-            const keyword = keywordBtn.dataset.keyword;
-            searchInput.value = '#' + keyword;
-            searchQuery = searchInput.value.toLowerCase().trim();
-            updateUrl();
-            displayPublications();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-
-        const bibtexBtn = e.target.closest('.bibtex-link');
-        if (bibtexBtn) {
-            const key = bibtexBtn.dataset.key;
-            const pub = currentPublications.find(p => p.key === key);
-            if (pub && pub.raw) {
-                showBibtexModal(pub.raw);
-            }
-        }
-    });
-
-    closeModal.addEventListener('click', hideBibtexModal);
-
-    window.addEventListener('click', (e) => {
-        if (e.target === bibtexModal) hideBibtexModal();
-    });
-
-    copyBibtex.addEventListener('click', () => {
-        navigator.clipboard.writeText(bibtexContent.textContent).then(() => {
-            const originalText = copyBibtex.textContent;
-            copyBibtex.textContent = 'Copied!';
-            copyBibtex.classList.add('btn-success');
-            setTimeout(() => {
-                copyBibtex.textContent = originalText;
-                copyBibtex.classList.remove('btn-success');
-            }, 2000);
-        });
-    });
+  });
 }
 
-function showBibtexModal(raw) {
-    bibtexContent.textContent = raw;
-    bibtexModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+function showBibtexModal(rawBibtex) {
+  bibtexContent.textContent = rawBibtex.trim();
+  bibtexModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 function hideBibtexModal() {
-    bibtexModal.classList.add('hidden');
-    document.body.style.overflow = '';
+  bibtexModal.classList.add('hidden');
+  document.body.style.overflow = '';
 }
 
 function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) readFile(file);
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.add('drag-over');
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove('drag-over');
-
-    const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.bib') || file.name.endsWith('.bibtex') || file.name.endsWith('.csv'))) {
-        readFile(file);
-    } else {
-        showError('Please drop a valid .bib or .csv file');
-    }
+  const file = e.target.files?.[0];
+  if (file) readFile(file);
 }
 
 function readFile(file) {
-    showLoading(true);
-    currentFileType = file.name.endsWith('.csv') ? 'csv' : 'bib';
-    urlInput.value = '';
-    updateUrl();
+  urlInput.value = '';
+  updateUrl();
+  showToast(`Reading ${file.name}...`);
 
-    const reader = new FileReader();
-    reader.onload = (e) => processContent(e.target.result, currentFileType);
-    reader.onerror = () => {
-        showLoading(false);
-        showError('Failed to read file');
-    };
-    reader.readAsText(file);
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target?.result;
+    if (typeof content !== 'string' || !content.trim()) {
+      showErrorState('Empty or invalid file', `The file "${file.name}" is empty or could not be read.`);
+      return;
+    }
+    processContent(content, file.name);
+  };
+  reader.onerror = () => {
+    showErrorState('Failed to read file', `Could not read "${file.name}". Please check file permissions and try again.`);
+  };
+  reader.readAsText(file);
+}
+
+async function fetchWithTimeout(url, timeoutMs = 3000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new Error('Connection timed out');
+    }
+    throw err;
+  }
 }
 
 async function loadFromUrl(url) {
-    if (!url) {
-        showError('Please enter a URL');
-        return;
-    }
+  let targetUrl = (url || '').trim();
+  if (!targetUrl) {
+    showErrorState('Invalid URL', 'Please enter a valid .bib URL to load publications.');
+    return;
+  }
 
-    if (!url.match(/^https?:\/\//i)) {
-        url = 'https://' + url;
-        urlInput.value = url;
-    }
+  if (!targetUrl.match(/^https?:\/\//i)) {
+    targetUrl = `https://${targetUrl}`;
+    urlInput.value = targetUrl;
+  }
 
+  try {
+    const parsed = new URL(targetUrl);
+    if (!parsed.hostname || !parsed.hostname.includes('.')) {
+      throw new Error('Invalid domain name');
+    }
+  } catch {
+    showErrorState('Invalid URL', `"${targetUrl}" is not a valid web address. Please check the URL and try again.`);
+    return;
+  }
+
+  // Rewrite github blob url to raw
+  if (targetUrl.includes('github.com') && targetUrl.includes('/blob/')) {
+    targetUrl = targetUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+    urlInput.value = targetUrl;
+  }
+
+  updateUrl();
+  showToast('Loading publications...');
+
+  try {
+    let content = null;
+
+    // Step 1: Direct fetch with short 3s timeout
     try {
-        new URL(url);
-    } catch {
-        showError('Please enter a valid URL');
-        return;
+      const response = await fetchWithTimeout(targetUrl, 3000);
+      if (response.ok) {
+        content = await response.text();
+      } else if (response.status === 404 || response.status === 410) {
+        throw new Error('File not found (HTTP 404)');
+      } else if (response.status >= 400 && response.status < 500) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (directErr) {
+      if (directErr.message.includes('404') || directErr.message.includes('400')) {
+        throw directErr;
+      }
+      content = null;
     }
 
-    if (url.includes('github.com') && url.includes('/blob/')) {
-        url = url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-        urlInput.value = url;
+    // Step 2: Fallback via single fast CORS proxy only if direct was blocked
+    if (content === null) {
+      try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        const response = await fetchWithTimeout(proxyUrl, 3000);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        content = await response.text();
+      } catch {
+        content = null;
+      }
     }
 
-    updateUrl();
-    currentFileType = url.toLowerCase().endsWith('.csv') ? 'csv' : 'bib';
-    showLoading(true);
-
-    try {
-        let response;
-        let lastError;
-
-        try {
-            response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        } catch (e) {
-            lastError = e;
-            response = null;
-        }
-
-        if (!response) {
-            try {
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            } catch (e) {
-                lastError = e;
-                response = null;
-            }
-        }
-
-        if (!response) {
-            try {
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            } catch (e) {
-                lastError = e;
-                response = null;
-            }
-        }
-
-        if (!response) {
-            throw lastError || new Error('Failed to fetch from all sources');
-        }
-
-        const content = await response.text();
-        processContent(content, currentFileType);
-    } catch (error) {
-        showLoading(false);
-        showError(`Failed to load file: ${error.message}`);
+    if (content === null) {
+      throw new Error('Unable to retrieve file from URL');
     }
+
+    processContent(content, targetUrl);
+  } catch (err) {
+    showErrorState(
+      'Invalid or inaccessible URL',
+      `Unable to load BibTeX from "${targetUrl}" (${err.message}). Please verify the URL or upload a local .bib file.`
+    );
+  }
 }
 
-function processContent(content, fileType) {
-    try {
-        currentPublications = fileType === 'csv' ? parseCSV(content) : parseBibTeX(content);
+function processContent(content, sourceName = '') {
+  try {
+    currentPublications = parseBibTeX(content);
 
-        if (currentPublications.length === 0) {
-            showLoading(false);
-            showError(`No publications found in the ${fileType.toUpperCase()} file`);
-            return;
-        }
-
-        updateStats(currentPublications);
-        displayPublications();
-        filtersSection.style.display = 'flex';
-        showLoading(false);
-    } catch (error) {
-        showLoading(false);
-        showError(`Failed to parse ${fileType.toUpperCase()}: ${error.message}`);
-        console.error('Parse error:', error);
+    if (!currentPublications || currentPublications.length === 0) {
+      showErrorState(
+        'No valid BibTeX found',
+        sourceName
+          ? `No publications could be parsed from "${sourceName}". Please ensure the file contains valid BibTeX entries (@article, @inproceedings, etc.).`
+          : 'No valid BibTeX entries found. Please ensure the file or URL contains standard BibTeX publications.'
+      );
+      return;
     }
+
+    displayPublications();
+  } catch (err) {
+    showErrorState('BibTeX Parsing Error', `Failed to parse BibTeX data: ${err.message}`);
+    console.error('Parse error:', err);
+  }
+}
+
+function showErrorState(title, message) {
+  const existingToast = document.querySelector('.toast');
+  if (existingToast) existingToast.remove();
+
+  currentPublications = [];
+  updateStats(0, 0, []);
+  publicationsContainer.innerHTML = `
+    <div class="empty-state error-state" role="alert">
+      <h3 class="empty-title">${escapeHtml(title)}</h3>
+      <p class="empty-text">${escapeHtml(message)}</p>
+    </div>
+  `;
 }
 
 function displayPublications() {
-    let filteredPubs = currentPublications;
+  let filtered = currentPublications;
 
-    if (searchQuery) {
-        filteredPubs = filteredPubs.filter(pub => {
-            const searchFields = [
-                pub.title,
-                pub.authors,
-                pub.venue,
-                pub.year?.toString(),
-                pub.type,
-                ...(pub.keywords?.map(k => '#' + k) || [])
-            ].filter(Boolean).join(' ').toLowerCase();
+  if (searchQuery) {
+    filtered = filtered.filter(pub => {
+      const searchFields = [
+        pub.title,
+        pub.authors,
+        pub.venue,
+        pub.year ? String(pub.year) : '',
+        pub.type,
+        ...(pub.keywords ? pub.keywords.map(k => `#${k}`) : [])
+      ].filter(Boolean).join(' ').toLowerCase();
 
-            return searchFields.includes(searchQuery);
-        });
-    }
+      return searchFields.includes(searchQuery);
+    });
+  }
 
-    // Filter by type
-    if (excludePreprints.checked) {
-        filteredPubs = filteredPubs.filter(pub => pub.type !== 'preprint');
-    }
+  if (excludePreprints.checked) {
+    filtered = filtered.filter(pub => pub.type !== 'preprint');
+  }
 
-    let groups;
-    if (currentGrouping === 'year') {
-        groups = groupByYear(filteredPubs);
-    } else if (currentGrouping === 'type') {
-        groups = groupByType(filteredPubs);
-    } else {
-        groups = groupByOriginal(filteredPubs);
-    }
-    renderPublications(groups, publicationsContainer);
+  let groups;
+  if (currentGrouping === 'year') {
+    groups = groupByYear(filtered);
+  } else if (currentGrouping === 'type') {
+    groups = groupByType(filtered);
+  } else {
+    groups = groupByOriginal(filtered);
+  }
 
-    // Update stats based on filtered results
-    updateStats(filteredPubs);
-
-    const countEl = document.getElementById('searchCount');
-    if (countEl) {
-        countEl.textContent = searchQuery
-            ? `Showing ${filteredPubs.length} of ${currentPublications.length}`
-            : '';
-    }
+  renderPublications(groups, publicationsContainer);
+  updateStats(filtered.length, currentPublications.length, filtered);
 }
 
-function showLoading(show) {
-    if (show) {
-        loadingOverlay.classList.remove('hidden');
-    } else {
-        loadingOverlay.classList.add('hidden');
-    }
+function showToast(message) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  toast.setAttribute('role', 'status');
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.25s ease';
+    setTimeout(() => toast.remove(), 250);
+  }, 2000);
 }
 
-function showError(message) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 1rem 2rem;
-        background: #333;
-        color: white;
-        font-weight: 500;
-        z-index: 1000;
-        animation: fadeIn 0.3s ease;
-    `;
-    toast.textContent = message;
-
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
+// Bootstrap
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
 }
-
-function exportPublications(format) {
-    let content, filename, mimeType;
-
-    switch (format) {
-        // case 'json':
-        //     content = JSON.stringify(currentPublications, null, 2);
-        //     filename = 'publications.json';
-        //     mimeType = 'application/json';
-        //     break;
-        case 'bibtex':
-            content = exportToBibTeX(currentPublications);
-            filename = 'publications.bib';
-            mimeType = 'text/plain';
-            break;
-        case 'csv':
-            content = exportToCSV(currentPublications);
-            filename = 'publications.csv';
-            mimeType = 'text/csv';
-            break;
-        default:
-            return;
-    }
-
-    downloadFile(content, filename, mimeType);
-}
-
-function exportToBibTeX(publications) {
-    return publications.map(pub => {
-        const entryType = pub.type === 'article' ? 'article' :
-            pub.type === 'conference' ? 'inproceedings' : 'misc';
-
-        let entry = `@${entryType}{${pub.key},\n`;
-        entry += `  title = {${pub.title}},\n`;
-        entry += `  author = {${pub.authors}},\n`;
-        if (pub.year) entry += `  year = {${pub.year}},\n`;
-        if (pub.venue) {
-            if (pub.type === 'article') {
-                entry += `  journal = {${pub.venue}},\n`;
-            } else {
-                entry += `  booktitle = {${pub.venue}},\n`;
-            }
-        }
-        if (pub.pages) entry += `  pages = {${pub.pages}},\n`;
-        if (pub.doi) entry += `  doi = {${pub.doi}},\n`;
-        if (pub.url) entry += `  url = {${pub.url}},\n`;
-        if (pub.volume) entry += `  volume = {${pub.volume}},\n`;
-        if (pub.number) entry += `  number = {${pub.number}},\n`;
-        if (pub.publisher) entry += `  publisher = {${pub.publisher}},\n`;
-        entry += `}\n`;
-        return entry;
-    }).join('\n');
-}
-
-function exportToCSV(publications) {
-    const headers = ['Title', 'Authors', 'Year', 'Type', 'Venue', 'Pages', 'DOI', 'URL'];
-    const rows = publications.map(pub => [
-        `"${(pub.title || '').replace(/"/g, '""')}"`,
-        `"${(pub.authors || '').replace(/"/g, '""')}"`,
-        pub.year || '',
-        pub.type || '',
-        `"${(pub.venue || '').replace(/"/g, '""')}"`,
-        pub.pages || '',
-        pub.doi || '',
-        pub.url || ''
-    ]);
-
-    return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-}
-
-function downloadFile(content, filename, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-init();

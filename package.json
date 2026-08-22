@@ -1,18 +1,17 @@
 {
-  "name": "bibtex-parser",
+  "name": "bibtex",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "description": "A minimal, fast BibTeX viewer and search tool.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test test/*.test.js",
     "deploy": "npm run build && cd dist && git init && git add -A && git commit -m 'deploy' --allow-empty && git push -f git@github.com:dynaroars/bibtex.git main:gh-pages"
   },
   "devDependencies": {
     "vite": "^8.0.3"
-  },
-  "dependencies": {
-    "bibtex-parse": "^2.1.0"
   }
 }

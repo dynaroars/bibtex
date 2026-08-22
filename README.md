@@ -1,62 +1,33 @@
-# BibTeX Parser
+# BibTeX Viewer
 
-Parse and display your academic publications.  See demo at [https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib](https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib).
+A fast, minimal, zero-dependency viewer and search tool for academic BibTeX publications.
+
+**Live Demo**: [roars.dev/bibtex](https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib)
 
 ## Features
 
-- **File Upload** - Drag & drop or browse for `.bib` or `.csv` files
-- **URL Loading** - Load BibTeX directly from a URL
-- **Grouping** - View publications by Year or Type
-- **Export** - Download as JSON, BibTeX, or CSV
-
-## Usage
-
-### Quick Start
-
-```bash
-npm install
-npm run dev
-```
-
-Visit `http://localhost:5173`
-
-### Load via URL Parameter
-
-```
-http://localhost:5173/?bib=https://example.com/publications.bib
-```
-
-### Supported File Formats
-
-**BibTeX (.bib)**
-- Standard BibTeX entries (article, inproceedings, misc, etc.)
-- Entries with `crossref` field are automatically filtered out
-
-**CSV (.csv)**
-- Headers: `title`, `authors`, `year`, `venue`, `type`, `doi`, `url`, `pages`
-- Flexible column name matching
-
-## Export Formats
-
-| Format | Description |
-|--------|-------------|
-| JSON | Full structured data |
-| BibTeX | Standard `.bib` format |
-| CSV | Spreadsheet-compatible |
+- **BibTeX Loading** — Load from any `.bib` URL or upload / drag-and-drop a `.bib` file
+- **Instant Search** — Live filtering by title, author, venue, year, or `#tag`
+- **Flexible Grouping** — Group publications by Default order, Year, or Publication Type
+- **Preprint Filter** — One-click toggle to hide preprints and arXiv drafts
+- **Minimalist Design** — Clean typography, automatic dark/light theme, and back-to-top navigation
+- **Search Engine Friendly** — Full SEO metadata, Open Graph previews, and Schema.org structured data
 
 ## Development
 
 ```bash
-npm run dev      # Start dev server
+npm install
+npm run dev      # Start Vite dev server
+npm test         # Run unit tests (Node.js test runner)
 npm run build    # Build for production
-npm run preview  # Preview production build
 ```
 
-## Tech
+## Tech Stack
 
-- Vanilla JavaScript (ES Modules)
-- Vite
-- Custom BibTeX/CSV parsers
+- **Vanilla JavaScript** (ES Modules, 0 runtime dependencies)
+- **Vite** (bundling & dev server)
+- **Node.js Native Test Runner** (`node:test`)
+- **GitHub Actions** (automated testing & deployment)
 
 ## License
 
