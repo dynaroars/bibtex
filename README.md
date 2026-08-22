@@ -2,7 +2,7 @@
 
 A fast, minimal, zero-dependency viewer and search tool for academic BibTeX publications.
 
-**Live Demo**: [roars.dev/bibtex](https://roars.dev/bibtex/?bib=https://tvn.roars.dev/cv/cv.bib)
+**Live Demo**: [bibtex.roars.dev](https://bibtex.roars.dev/?bib=https://tvn.roars.dev/cv/cv.bib)
 
 ## Features
 

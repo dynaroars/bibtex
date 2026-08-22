@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://roars.dev/bibtex/sitemap.xml
+Sitemap: https://bibtex.roars.dev/sitemap.xml
