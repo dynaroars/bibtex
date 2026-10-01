@@ -1,7 +1,7 @@
 import { parseBibTeX, groupByYear, groupByType, groupByDefault } from './parser.js';
 import { renderPublications, updateStats, escapeHtml } from './renderer.js';
 
-const DEFAULT_BIB_URL = 'https://bibtex.roars.dev/bib/cv.bib';
+const DEFAULT_BIB_URL = 'https://bibtex.roars.dev/bib/roars.bib';
 const GROUPERS = { default: groupByDefault, year: groupByYear, type: groupByType };
 
 const $ = (id) => document.getElementById(id);
