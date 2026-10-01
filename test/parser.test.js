@@ -6,7 +6,6 @@ import {
   formatAuthors,
   groupByYear,
   groupByType,
-  groupByOriginal,
   groupByDefault,
   extractStringDefinitions
 } from '../src/parser.js';
@@ -86,7 +85,7 @@ test('parseBibTeX resolves cross-references', () => {
   assert.equal(pubs[0].title, 'LLM-Guided Fuzzing');
   assert.equal(pubs[0].year, 2025);
   assert.equal(pubs[0].venue, 'SBST');
-  assert.equal(pubs[0].pdfUrl, 'https://roars.dev/pubs/test.pdf');
+  assert.equal(pubs[0].url, 'https://roars.dev/pubs/test.pdf');
 });
 
 test('parseBibTeX handles preprints and arXiv identifiers', () => {
@@ -145,7 +144,7 @@ test('parseBibTeX handles full realistic multi-entry corpus', () => {
   assert.deepEqual(pubs[0].keywords, ['invariants', 'formal-methods']);
 });
 
-test('groupByYear, groupByType, and groupByOriginal group correctly', () => {
+test('groupByYear, groupByType, and groupByDefault group correctly', () => {
   const pubs = [
     { key: 'p1', title: 'Paper 1', year: 2024, type: 'conference', typePriority: 1, originalIndex: 0 },
     { key: 'p2', title: 'Paper 2', year: 2024, type: 'journal', typePriority: 2, originalIndex: 1 },
@@ -154,20 +153,17 @@ test('groupByYear, groupByType, and groupByOriginal group correctly', () => {
 
   const yearGroups = groupByYear(pubs);
   assert.equal(yearGroups.length, 2);
-  assert.equal(yearGroups[0].year, '2024');
+  assert.equal(yearGroups[0].label, '2024');
   assert.equal(yearGroups[0].publications.length, 2);
 
   const typeGroups = groupByType(pubs);
   assert.equal(typeGroups.length, 2);
-  assert.equal(typeGroups[0].year, 'Conference Papers');
+  assert.equal(typeGroups[0].label, 'Conference Papers');
   assert.equal(typeGroups[0].publications.length, 2);
 
-  const originalGroups = groupByOriginal(pubs);
-  assert.equal(originalGroups.length, 1);
-  assert.equal(originalGroups[0].publications.length, 3);
-
   const defaultGroups = groupByDefault(pubs);
-  assert.deepEqual(defaultGroups, originalGroups);
+  assert.equal(defaultGroups.length, 1);
+  assert.equal(defaultGroups[0].publications.length, 3);
 });
 
 test('handles empty and invalid input gracefully', () => {
@@ -175,4 +171,15 @@ test('handles empty and invalid input gracefully', () => {
   assert.deepEqual(parseBibTeX(null), []);
   assert.deepEqual(parseBibTeX(undefined), []);
   assert.deepEqual(parseBibTeX('not a bibtex string'), []);
+});
+
+test('entries of unknown type (e.g. @misc) are dropped', () => {
+  const pubs = parseBibTeX('@misc{m, title={X}, year={2024}} @article{a, title={Y}, year={2024}}');
+  assert.deepEqual(pubs.map(p => p.key), ['a']);
+});
+
+test('groupByType orders conference, journal, then book', () => {
+  const mk = (type) => ({ type, year: 2024, typePriority: 0, originalIndex: 0 });
+  const labels = groupByType([mk('book'), mk('journal'), mk('conference')]).map(g => g.label);
+  assert.deepEqual(labels, ['Conference Papers', 'Journal Articles', 'Books']);
 });

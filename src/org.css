@@ -1,0 +1,158 @@
+body {
+  margin: 20px auto;
+  max-width: 80%;
+  line-height: 1.6;
+  padding: 0 10px;
+  background: snow;
+  color: black;
+}
+
+.header-flex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2em;
+}
+.header-flex figure {
+  margin: 0;
+}
+
+ol li.year-gap {
+  margin-bottom: 1.5em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid lightgray;
+}
+
+blockquote {
+  margin: 1.5em 0;
+  padding: 0.5em 10px;
+}
+
+.styled {
+  list-style: none;
+  padding: 0;
+}
+
+.styled li::before {
+  content: attr(data-icon);
+}
+
+details > summary {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#toc {
+  position: fixed;
+  right: 0.5em;
+  top: 0.5em;
+  padding: 0.5em 5px;
+}
+
+#toc #full { display: none; }
+#toc:hover #full,
+#toc details[open] #full {
+  display: block;
+}
+
+.myborder {
+  padding: 0 10px;
+  border: 2px dotted transparent;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.6em;
+  }
+
+  #toc {
+    max-width: 45vw;
+  }
+
+  header {
+    padding-right: 45vw;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  blockquote {
+    background: ghostwhite;
+    border-left: 3px dotted darkgreen;
+  }
+
+  pre, code {
+    background: ghostwhite;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  a:hover {
+    background: ghostwhite;
+  }
+
+  #toc {
+    background-color: ghostwhite;
+  }
+
+  .myborder:hover {
+    border: 2px solid darkgreen;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Solarized dark */
+  body {
+    color: #839496;
+    background: #002b36;
+  }
+
+  a {
+    color: #b58900;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  a:visited {
+    color: #cb4b16;
+  }
+
+  strong {
+    color: darkgray;
+  }
+
+  h1 {
+    color: #d33682;
+  }
+
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #859900;
+  }
+
+  pre, code {
+    background: #073642;
+    border: 1px solid #586e75;
+    box-shadow: 1px 1px 1px #586e75;
+    padding: 1px;
+  }
+
+  blockquote {
+    border-left: 3px dotted #859900;
+  }
+
+  #toc {
+    background-color: #073642;
+  }
+
+  .myborder:hover {
+    border: 2px solid darkgreen;
+  }
+}
