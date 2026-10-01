@@ -32,3 +32,13 @@ test('title is escaped and links are built from available fields', () => {
   assert.match(html, /href="https:\/\/arxiv\.org\/abs\/2001\.0001">arXiv/);
   assert.match(html, /data-bibtex="k1">BibTeX/);
 });
+
+test('link label depends on the URL; tools only link from the title', () => {
+  const pdf = renderPublication({ ...pub, url: 'https://x.org/a.pdf' });
+  assert.match(pdf, /href="https:\/\/x\.org\/a\.pdf">PDF/);
+  const page = renderPublication({ ...pub, url: 'https://x.org/page' });
+  assert.match(page, />Link<\/a>/);
+  const tool = renderPublication({ ...pub, type: 'tool', url: 'https://x.org/page' });
+  assert.ok(!tool.includes('>Link</a>'));
+  assert.match(tool, /\[Tool\]/);
+});

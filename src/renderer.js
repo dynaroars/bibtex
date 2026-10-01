@@ -1,6 +1,9 @@
 // Renderer for BibTeX publications and summary stats
 import { TYPES } from './parser.js';
 
+// For these the title already links to the entry's URL.
+const TITLE_LINK_ONLY = new Set(['tool', 'benchmark', 'news']);
+
 const AUTHOR_LEVELS = { 1: 'Undergraduate student', 2: "Master's student", 3: 'PhD student' };
 
 export function escapeHtml(text) {
@@ -56,7 +59,7 @@ export function renderPublication(pub, showYear = false) {
 
   const links = [
     pub.raw && `<a href="#" data-bibtex="${escapeHtml(pub.key)}">BibTeX</a>`,
-    pub.url && link(pub.url, 'PDF'),
+    pub.url && !TITLE_LINK_ONLY.has(pub.type) && link(pub.url, /\.pdf($|[?#])/i.test(pub.url) ? 'PDF' : 'Link'),
     pub.doi && link(`https://doi.org/${pub.doi}`, 'DOI'),
     pub.eprint && link(`https://arxiv.org/abs/${pub.eprint}`, 'arXiv')
   ].filter(Boolean);
