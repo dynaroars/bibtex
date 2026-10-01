@@ -22,7 +22,7 @@ test('cleanLatex strips and converts LaTeX markup', () => {
 test('formatAuthors normalizes author strings', () => {
   assert.equal(formatAuthors('Nguyen, ThanhVu and Dwyer, Matthew'), 'ThanhVu Nguyen, Matthew Dwyer');
   assert.equal(formatAuthors('John Doe and Jane Smith'), 'John Doe, Jane Smith');
-  assert.equal(formatAuthors('Doe, John$^1$ and Smith, Jane$^2$'), 'John Doe, Jane Smith');
+  assert.equal(formatAuthors('Doe$^1$, John and Smith$^2$, Jane'), 'John Doe<sup>1</sup>, Jane Smith<sup>2</sup>');
   assert.equal(formatAuthors(''), '');
 });
 

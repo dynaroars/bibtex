@@ -156,3 +156,9 @@ details > summary {
     border: 2px solid darkgreen;
   }
 }
+
+/* Make <dialog> use the page theme instead of the browser default colors */
+dialog {
+  color: inherit;
+  background: inherit;
+}

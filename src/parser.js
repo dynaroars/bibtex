@@ -154,8 +154,7 @@ export function formatAuthors(authorString) {
   return authorString
     .split(/\s+and\s+/i)
     .map(author => {
-      // Math-mode superscripts ($^1$) are dropped; plain ones are kept by cleanLatex.
-      const name = cleanLatex(author.replace(/\$\^[^$]*\$/g, '').trim());
+      const name = cleanLatex(author);
       const [last, first] = name.split(',').map(p => p.trim());
       return first ? `${first} ${last}` : name;
     })
