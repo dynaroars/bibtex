@@ -68,7 +68,7 @@ export function renderPublication(pub, showYear = false) {
     labelAuthorLevels(sanitizeLatexHtml(pub.authors)),
     venue.join(' '),
     pub.awards.map(award => `🏆 ${sanitizeLatexHtml(award)}`).join(' '),
-    pub.keywords.map(kw => `<a href="#" data-keyword="${escapeHtml(kw)}">#${sanitizeLatexHtml(kw)}</a>`).join(' '),
+    pub.keywords.map(kw => `<a href="#" data-keyword="${escapeHtml(kw)}"><code>#${sanitizeLatexHtml(kw)}</code></a>`).join(' '),
     links.join(' | ')
   ].filter(Boolean);
 
