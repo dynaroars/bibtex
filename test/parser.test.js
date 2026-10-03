@@ -178,13 +178,13 @@ test('entries of unknown type (e.g. @misc) are dropped', () => {
   assert.deepEqual(pubs.map(p => p.key), ['a']);
 });
 
-test('@misc entries are shown as tool, benchmark or news by keyword', () => {
+test('@misc entries are shown as tool or news by keyword (benchmarks are tools)', () => {
   const pubs = parseBibTeX(`
     @misc{t, title={T}, keywords={tool, webapp}}
     @miscs{b, title={B}, keywords = {benchmark}}
     @misc{n, title={N}, year={2024}, keywords={News}}
   `);
-  assert.deepEqual(pubs.map(p => p.type), ['tool', 'benchmark', 'news']);
+  assert.deepEqual(pubs.map(p => p.type), ['tool', 'tool', 'news']);
 });
 
 test('incollection and inbook entries are book chapters', () => {

@@ -2,7 +2,7 @@
 import { TYPES } from './parser.js';
 
 // For these the title already links to the entry's URL.
-const TITLE_LINK_ONLY = new Set(['tool', 'benchmark', 'news']);
+const TITLE_LINK_ONLY = new Set(['tool', 'news']);
 
 const AUTHOR_LEVELS = { 1: 'Undergraduate student', 2: "Master's student", 3: 'PhD student' };
 

@@ -1,6 +1,6 @@
 // BibTeX parser and grouping utilities
 
-// Publication types in display order. Tools, benchmarks and news are @misc entries
+// Publication types in display order. Tools (including benchmarks) and news are @misc entries
 // tagged with a matching keyword; any other entry of an unknown type is dropped.
 export const TYPES = [
   { id: 'conference', label: 'Conference', plural: 'Conference Papers' },
@@ -10,8 +10,7 @@ export const TYPES = [
   { id: 'techreport', label: 'Tech Report', plural: 'Technical Reports' },
   { id: 'thesis', label: 'Thesis', plural: 'Theses' },
   { id: 'preprint', label: 'Preprint', plural: 'Preprints' },
-  { id: 'tool', label: 'Tool', plural: 'Tools & Projects' },
-  { id: 'benchmark', label: 'Benchmark', plural: 'Benchmarks' },
+  { id: 'tool', label: 'Tool', plural: 'Tools, Projects & Benchmarks' },
   { id: 'news', label: 'News', plural: 'News' }
 ];
 
@@ -167,7 +166,7 @@ export function formatAuthors(authorString) {
     .join(', ');
 }
 
-const KEYWORD_TYPES = ['tool', 'benchmark', 'news'];
+const KEYWORD_TYPES = { tool: 'tool', benchmark: 'tool', news: 'news' };
 
 function classify(rawType, venue, fields) {
   const isPreprint = /arxiv|preprint/i.test(venue) ||
@@ -177,7 +176,8 @@ function classify(rawType, venue, fields) {
   if (BIBTEX_TYPES[rawType]) return BIBTEX_TYPES[rawType];
 
   const keywords = (fields.keywords || '').toLowerCase().split(',').map(k => k.trim());
-  return KEYWORD_TYPES.find(type => keywords.includes(type)) || null;
+  const match = keywords.find(k => KEYWORD_TYPES[k]);
+  return match ? KEYWORD_TYPES[match] : null;
 }
 
 // Returns null for entries whose type is not in TYPES.
