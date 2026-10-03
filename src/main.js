@@ -70,6 +70,7 @@ function showError(title, message) {
   publications = [];
   statusEl.textContent = '';
   updateStats(0, 0);
+  $('section-nav').innerHTML = '';
   container.innerHTML = `
     <div role="alert">
       <h3>${escapeHtml(title)}</h3>

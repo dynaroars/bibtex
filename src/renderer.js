@@ -23,18 +23,28 @@ export function sanitizeLatexHtml(text) {
 
 const link = (href, text) => `<a href="${escapeHtml(href)}">${text}</a>`;
 
+// Links to each section, shown under the result count when there is more than one.
+function renderSectionNav(groups) {
+  const nav = document.getElementById('section-nav');
+  if (!nav) return;
+  nav.innerHTML = groups.length < 2 ? '' : groups.map((group, i) =>
+    link(`#section-${i}`, `${escapeHtml(group.label)} (${group.publications.length})`)
+  ).join(' · ');
+}
+
 export function renderPublications(groups, container) {
   const nonEmpty = (groups || []).filter(g => g.publications?.length > 0);
+  renderSectionNav(nonEmpty);
 
   if (nonEmpty.length === 0) {
     container.innerHTML = '<p>No publications found matching your search or filters.</p>';
     return;
   }
 
-  container.innerHTML = nonEmpty.map(group => {
+  container.innerHTML = nonEmpty.map((group, i) => {
     const showYear = isNaN(Number(group.label));
     return `
-      <section>
+      <section id="section-${i}">
         <h2>${escapeHtml(group.label)} (${group.publications.length})</h2>
         <ol reversed>
           ${group.publications.map(pub => renderPublication(pub, showYear)).join('')}
