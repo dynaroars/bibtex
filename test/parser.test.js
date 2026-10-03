@@ -187,6 +187,14 @@ test('@misc entries are shown as tool, benchmark or news by keyword', () => {
   assert.deepEqual(pubs.map(p => p.type), ['tool', 'benchmark', 'news']);
 });
 
+test('incollection and inbook entries are book chapters', () => {
+  const pubs = parseBibTeX(`
+    @incollection{a, title={A}, year={2024}}
+    @inbook{b, title={B}, year={2024}}
+  `);
+  assert.deepEqual(pubs.map(p => p.type), ['chapter', 'chapter']);
+});
+
 test('groupByType orders conference, journal, then book', () => {
   const mk = (type) => ({ type, year: 2024, typePriority: 0, originalIndex: 0 });
   const labels = groupByType([mk('book'), mk('journal'), mk('conference')]).map(g => g.label);
