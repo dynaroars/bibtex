@@ -62,10 +62,10 @@ export function renderPublication(pub, showYear = false) {
   const venue = [];
   if (pub.venue) venue.push(`<em>${sanitizeLatexHtml(pub.venue)}</em>`);
   if (pub.volume || pub.number) venue.push([pub.volume, pub.number].filter(Boolean).map(escapeHtml).join('.'));
-  if (showYear && pub.year) venue.push(`(${pub.year})`);
+  if (showYear && pub.year && pub.type !== 'tool') venue.push(`(${pub.year})`);
   if (pub.publisher) venue.push(sanitizeLatexHtml(pub.publisher));
   if (pub.pages) venue.push(`pp. ${escapeHtml(pub.pages)}`);
-  else if (pub.year >= new Date().getFullYear()) venue.push('to appear');
+  else if (pub.year >= new Date().getFullYear() && !TITLE_LINK_ONLY.has(pub.type)) venue.push('to appear');
 
   const links = [
     pub.raw && `<a href="#" data-bibtex="${escapeHtml(pub.key)}">BibTeX</a>`,

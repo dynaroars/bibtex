@@ -42,3 +42,11 @@ test('link label depends on the URL; tools only link from the title', () => {
   assert.ok(!tool.includes('>Link</a>'));
   assert.match(tool, /\[Tool\]/);
 });
+
+test('tools show neither a year nor "to appear"', () => {
+  const year = new Date().getFullYear();
+  assert.match(renderPublication({ ...pub, year }), /to appear/);
+  const html = renderPublication({ ...pub, type: 'tool', year }, true);
+  assert.ok(!html.includes('to appear'));
+  assert.ok(!html.includes(`(${year})`));
+});

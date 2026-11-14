@@ -221,15 +221,23 @@ function splitList(value, separator) {
   return value ? value.split(separator).map(s => cleanLatex(s.trim())).filter(Boolean) : [];
 }
 
-export function groupByYear(publications) {
-  const grouped = Map.groupBy(publications, pub => pub.year || 'Unknown');
+// Tools carry a placeholder year (often the current one), so the year view
+// lists them in their own section after the dated publications.
+const UNDATED_TYPES = new Set(['tool']);
 
-  return [...grouped]
+export function groupByYear(publications) {
+  const undated = publications.filter(pub => UNDATED_TYPES.has(pub.type));
+  const dated = publications.filter(pub => !UNDATED_TYPES.has(pub.type));
+  const grouped = Map.groupBy(dated, pub => pub.year || 'Unknown');
+
+  const yearGroups = [...grouped]
     .sort(([a], [b]) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0))
     .map(([year, pubs]) => ({
       label: String(year),
       publications: pubs.slice().sort((a, b) => a.typePriority - b.typePriority)
     }));
+
+  return [...yearGroups, ...groupByType(undated)];
 }
 
 export function groupByType(publications) {

@@ -156,6 +156,10 @@ test('groupByYear, groupByType, and groupByDefault group correctly', () => {
   assert.equal(yearGroups[0].label, '2024');
   assert.equal(yearGroups[0].publications.length, 2);
 
+  const withTool = groupByYear([...pubs, { key: 't1', title: 'Tool', year: 2024, type: 'tool', typePriority: 7, originalIndex: 3 }]);
+  assert.deepEqual(withTool.map(g => g.label), ['2024', '2023', 'Tools, Projects & Benchmarks']);
+  assert.equal(withTool[0].publications.length, 2);
+
   const typeGroups = groupByType(pubs);
   assert.equal(typeGroups.length, 2);
   assert.equal(typeGroups[0].label, 'Conference Papers');
