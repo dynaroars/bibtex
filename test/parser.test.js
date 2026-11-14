@@ -204,3 +204,55 @@ test('groupByType orders conference, journal, then book', () => {
   const labels = groupByType([mk('book'), mk('journal'), mk('conference')]).map(g => g.label);
   assert.deepEqual(labels, ['Conference Papers', 'Journal Articles', 'Books']);
 });
+
+test('news stays in its own section outside yearly and default publication counts', () => {
+  const paper = { type: 'conference', year: 2025, typePriority: 0, originalIndex: 0 };
+  const news = { type: 'news', year: 2025, typePriority: 8, originalIndex: 1 };
+  for (const group of [groupByYear, groupByDefault]) {
+    const groups = group([paper, news]);
+    assert.deepEqual(groups[0].publications, [paper]);
+    assert.equal(groups[1].label, 'News');
+    assert.deepEqual(groups[1].publications, [news]);
+  }
+  assert.deepEqual(groupByYear([news]).map(g => g.label), ['News']);
+});
+
+test('preserves identifiers and URLs while cleaning display text once', () => {
+  const [pub] = parseBibTeX(String.raw`@article{a,
+    title={A {Nested {Deep {Title}}}},
+    author={Doe, Jane},
+    url={https://example.org/my_paper.pdf},
+    doi={10.1000/my_paper},
+    url_slides={https://example.org/my_slides.pdf},
+    keywords={my_tag}
+  }`);
+  assert.equal(pub.title, 'A Nested Deep Title');
+  assert.equal(pub.url, 'https://example.org/my_paper.pdf');
+  assert.equal(pub.doi, '10.1000/my_paper');
+  assert.equal(pub.slidesUrl, 'https://example.org/my_slides.pdf');
+});
+
+test('field values can contain assignments, nested entries, and escaped braces', () => {
+  const pubs = parseBibTeX(String.raw`@article{a,
+    title={Example @article{fake, title={inner}} and year={1999}},
+    note={An escaped \{ brace},
+    year={2024}
+  }`);
+  assert.equal(pubs.length, 1);
+  assert.equal(pubs[0].year, 2024);
+  assert.match(pubs[0].title, /Example @article/);
+});
+
+test('string definitions support quoted and deeply nested values', () => {
+  const pubs = parseBibTeX(`@string{venue = "Example Conference"}
+    @string{journal = {A {Nested {Journal}}}}
+    @article{a, journal=venue}
+    @article{b, journal=journal}`);
+  assert.deepEqual(pubs.map(p => p.venue), ['Example Conference', 'A Nested Journal']);
+});
+
+test('inherited property names are not publication types or macros', () => {
+  assert.deepEqual(parseBibTeX('@constructor{a,title={X}} @misc{b,keywords={constructor}}'), []);
+  const [pub] = parseBibTeX('@article{a,journal={constructor}}');
+  assert.equal(pub.venue, 'constructor');
+});

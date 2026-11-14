@@ -21,7 +21,15 @@ export function sanitizeLatexHtml(text) {
   return escapeHtml(text).replace(/&lt;(\/?)(sup|sub|em|strong)&gt;/g, '<$1$2>');
 }
 
-const link = (href, text) => `<a href="${escapeHtml(href)}">${text}</a>`;
+const link = (href, text) => {
+  try {
+    const url = new URL(href, 'https://bibtex.invalid/');
+    if (!['http:', 'https:'].includes(url.protocol)) return text;
+    return `<a href="${escapeHtml(href)}">${text}</a>`;
+  } catch {
+    return text;
+  }
+};
 
 // Links to each section, shown under the result count when there is more than one.
 function renderSectionNav(groups) {
@@ -69,8 +77,9 @@ export function renderPublication(pub, showYear = false) {
 
   const links = [
     pub.raw && `<a href="#" data-bibtex="${escapeHtml(pub.key)}">BibTeX</a>`,
-    pub.url && !TITLE_LINK_ONLY.has(pub.type) && link(pub.url, /\.pdf($|[?#])/i.test(pub.url) ? 'PDF' : 'Link'),
+    pub.url && !TITLE_LINK_ONLY.has(pub.type) && link(pub.url, /\.pdf($|[?#])|^https?:\/\/arxiv\.org\/pdf\//i.test(pub.url) ? 'PDF' : 'Link'),
     pub.doi && link(`https://doi.org/${pub.doi}`, 'DOI'),
+    pub.slidesUrl && link(pub.slidesUrl, 'Slides'),
     pub.eprint && link(`https://arxiv.org/abs/${pub.eprint}`, 'arXiv')
   ].filter(Boolean);
 
@@ -96,9 +105,13 @@ function labelAuthorLevels(html) {
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-export function updateStats(filteredCount, totalCount, publications = []) {
+export function updateStats(publications = [], allPublications = publications) {
   const countEl = document.getElementById('result-count');
   if (!countEl) return;
+
+  publications = publications.filter(pub => pub.type !== 'news');
+  const filteredCount = publications.length;
+  const totalCount = allPublications.filter(pub => pub.type !== 'news').length;
 
   if (totalCount === 0) {
     countEl.textContent = '';

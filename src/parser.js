@@ -55,11 +55,15 @@ export function parseBibTeX(bibtexContent) {
 }
 
 export function extractStringDefinitions(content) {
-  const defs = {};
-  const stringPattern = /@string\s*\{\s*([\w-]+)\s*=\s*\{([^}]*)\}\s*\}/gi;
+  const defs = Object.create(null);
+  const stringPattern = /@string\s*\{/gi;
 
-  for (const match of content.matchAll(stringPattern)) {
-    defs[match[1].toLowerCase()] = match[2].trim();
+  let match;
+  while ((match = stringPattern.exec(content))) {
+    const { fieldsContent, rawContent } = extractEntryContent(content, match.index);
+    if (fieldsContent === null) continue;
+    Object.assign(defs, parseFields(fieldsContent));
+    stringPattern.lastIndex = match.index + rawContent.length;
   }
 
   return defs;
@@ -69,16 +73,18 @@ function extractEntries(content) {
   const entries = [];
   const entryPattern = /@(\w+)\s*\{\s*([^,\s]+)\s*,/g;
 
-  for (const match of content.matchAll(entryPattern)) {
+  let match;
+  while ((match = entryPattern.exec(content))) {
     const type = match[1].toLowerCase();
     if (['preamble', 'string', 'comment'].includes(type)) continue;
 
     const { fieldsContent, rawContent } = extractEntryContent(content, match.index);
     if (fieldsContent !== null) {
+      entryPattern.lastIndex = match.index + rawContent.length;
       entries.push({
         type,
         key: match[2],
-        fields: parseFields(fieldsContent),
+        fields: parseFields(fieldsContent.slice(fieldsContent.indexOf(',') + 1)),
         raw: rawContent,
         index: entries.length
       });
@@ -94,6 +100,10 @@ function extractEntryContent(content, startPos) {
   let fieldsStart = -1;
 
   for (let pos = startPos; pos < content.length; pos++) {
+    if (content[pos] === '\\') {
+      pos++;
+      continue;
+    }
     if (content[pos] === '{') {
       if (depth === 0) fieldsStart = pos + 1;
       depth++;
@@ -112,13 +122,35 @@ function extractEntryContent(content, startPos) {
 }
 
 function parseFields(content) {
-  const fields = {};
-  const fieldPattern = /([\w-]+)\s*=\s*(?:\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}|"([^"]*)"|([\w-]+))/g;
-
-  for (const match of content.matchAll(fieldPattern)) {
-    const value = (match[2] || match[3] || match[4] || '').trim();
-    const key = match[1].toLowerCase();
-    fields[key] = key === 'note' ? value : cleanLatex(value);
+  const fields = Object.create(null);
+  const fieldPattern = /([\w-]+)\s*=\s*/g;
+  let match;
+  while ((match = fieldPattern.exec(content))) {
+    let pos = fieldPattern.lastIndex;
+    const opener = content[pos];
+    if (opener === '{' || opener === '"') {
+      const start = ++pos;
+      let depth = opener === '{' ? 1 : 0;
+      for (; pos < content.length; pos++) {
+        const char = content[pos];
+        if (char === '\\') { pos++; continue; }
+        if (char === '{') depth++;
+        if (char === '}') {
+          depth--;
+          if (opener === '{' && depth === 0) break;
+        }
+        if (opener === '"' && char === '"' && depth === 0) break;
+      }
+      if (pos === content.length) break;
+      fields[match[1].toLowerCase()] = content.slice(start, pos).trim();
+      fieldPattern.lastIndex = pos + 1;
+    } else {
+      const value = /^[\w-]+/.exec(content.slice(pos));
+      if (value) {
+        fields[match[1].toLowerCase()] = value[0];
+        fieldPattern.lastIndex = pos + value[0].length;
+      }
+    }
   }
 
   return fields;
@@ -173,10 +205,10 @@ function classify(rawType, venue, fields) {
     /arxiv/i.test(fields.archiveprefix || '') ||
     Boolean(fields.eprint);
   if (isPreprint) return 'preprint';
-  if (BIBTEX_TYPES[rawType]) return BIBTEX_TYPES[rawType];
+  if (Object.hasOwn(BIBTEX_TYPES, rawType)) return BIBTEX_TYPES[rawType];
 
   const keywords = (fields.keywords || '').toLowerCase().split(',').map(k => k.trim());
-  const match = keywords.find(k => KEYWORD_TYPES[k]);
+  const match = keywords.find(k => Object.hasOwn(KEYWORD_TYPES, k));
   return match ? KEYWORD_TYPES[match] : null;
 }
 
@@ -185,7 +217,7 @@ export function normalizeEntry(entry, stringDefs = {}) {
   const fields = entry.fields || {};
 
   let venue = fields.booktitle || fields.journal || '';
-  venue = stringDefs[venue.toLowerCase()] || venue;
+  if (Object.hasOwn(stringDefs, venue.toLowerCase())) venue = stringDefs[venue.toLowerCase()];
   venue = venue.replace(/#\s*"-?/g, ' ').replace(/-?"/g, '').trim();
 
   const type = classify((entry.type || '').toLowerCase(), venue, fields);
@@ -199,7 +231,7 @@ export function normalizeEntry(entry, stringDefs = {}) {
     key: entry.key,
     type,
     typePriority: typeIndex,
-    title: fields.title || 'Untitled',
+    title: cleanLatex(fields.title) || 'Untitled',
     authors: formatAuthors(fields.author),
     year: parseInt(fields.year, 10) || 0,
     venue: cleanLatex(venue),
@@ -207,9 +239,10 @@ export function normalizeEntry(entry, stringDefs = {}) {
     doi: fields.doi || null,
     eprint: fields.eprint || null,
     url: noteUrl || fields.url || null,
+    slidesUrl: fields.url_slides || null,
     awards: splitList(fields.note_award, ';'),
     keywords: splitList(fields.keywords, ','),
-    publisher: fields.publisher || null,
+    publisher: cleanLatex(fields.publisher) || null,
     volume: fields.volume || null,
     number: fields.number || null,
     originalIndex: entry.index ?? 0,
@@ -221,13 +254,13 @@ function splitList(value, separator) {
   return value ? value.split(separator).map(s => cleanLatex(s.trim())).filter(Boolean) : [];
 }
 
-// Tools carry a placeholder year (often the current one), so the year view
-// lists them in their own section after the dated publications.
-const UNDATED_TYPES = new Set(['tool']);
+// Tools carry placeholder years, and news is not a publication. Keep both
+// in separate sections so they don't inflate yearly publication counts.
+const SEPARATE_TYPES = new Set(['tool', 'news']);
 
 export function groupByYear(publications) {
-  const undated = publications.filter(pub => UNDATED_TYPES.has(pub.type));
-  const dated = publications.filter(pub => !UNDATED_TYPES.has(pub.type));
+  const undated = publications.filter(pub => SEPARATE_TYPES.has(pub.type));
+  const dated = publications.filter(pub => !SEPARATE_TYPES.has(pub.type));
   const grouped = Map.groupBy(dated, pub => pub.year || 'Unknown');
 
   const yearGroups = [...grouped]
@@ -252,8 +285,9 @@ export function groupByType(publications) {
 }
 
 export function groupByDefault(publications) {
+  const news = publications.filter(pub => pub.type === 'news');
   return [{
     label: 'All Publications',
-    publications: publications.slice().sort((a, b) => a.originalIndex - b.originalIndex)
-  }];
+    publications: publications.filter(pub => pub.type !== 'news').sort((a, b) => a.originalIndex - b.originalIndex)
+  }, ...groupByType(news)];
 }
